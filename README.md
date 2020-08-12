@@ -7,6 +7,7 @@ A windows shell extension to allow checking copied files and add more missing fe
 - Nuke empty files and folders
 - Create hardlinks
 - Fast and simple (and yet familiar) UI
+- Option to prevent having multiple jobs reading/writing on the same disk without manual interaction
 
 ## Screenshots
 To Do
