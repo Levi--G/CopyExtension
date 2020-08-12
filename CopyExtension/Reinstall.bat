@@ -1,0 +1,2 @@
+Uninstall.bat
+Install.bat
