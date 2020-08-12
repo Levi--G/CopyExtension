@@ -10,7 +10,9 @@ A windows shell extension to allow checking copied files and add more missing fe
 - Option to prevent having multiple jobs reading/writing on the same disk without manual interaction
 
 ## Screenshots
-To Do
+
+![](https://github.com/Levi--G/CopyExtension/raw/master/Screenshots/Waiting.png)
+![](https://github.com/Levi--G/CopyExtension/raw/master/Screenshots/Comparing.png)
 
 ## Installation
 - Find a release zip on github
