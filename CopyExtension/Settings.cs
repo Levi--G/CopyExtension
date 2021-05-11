@@ -6,15 +6,17 @@ namespace CopyExtension
 {
     public class Settings
     {
-        public bool ReserveWriting { get; set; }
-        public bool ReserveReading { get; set; }
-        public bool EnableCopy { get; set; }
-        public bool EnableMove { get; set; }
-        public bool EnableCompare { get; set; }
-        public bool EnableHardlink { get; set; }
-        public bool EnableNukeFolder { get; set; }
-        public bool EnableNukeFile { get; set; }
-        public bool DeleteOnCancel { get; set; }
+        public bool ReserveWriting { get; set; } = true;
+        public bool ReserveReading { get; set; } = false;
+        public bool EnableCopy { get; set; } = true;
+        public bool EnableMove { get; set; } = true;
+        public bool EnableCompare { get; set; } = true;
+        public bool EnableHardlink { get; set; } = true;
+        public bool EnableNukeFolder { get; set; } = true;
+        public bool EnableNukeFile { get; set; } = true;
+        public int SmallFileLimit { get; set; } = 10;
+        public long SmallFileSize { get; set; } = 5 * 1024 * 1024;
+
 
         public static Settings Load()
         {
@@ -24,18 +26,7 @@ namespace CopyExtension
             {
                 using (var s = File.OpenWrite(path))
                 {
-                    ser.Serialize(s, new Settings()
-                    {
-                        ReserveReading = false,
-                        ReserveWriting = true,
-                        EnableCompare = true,
-                        EnableCopy = true,
-                        EnableMove = true,
-                        EnableHardlink = true,
-                        EnableNukeFile = true,
-                        EnableNukeFolder = true,
-                        DeleteOnCancel = true
-                    });
+                    ser.Serialize(s, new Settings());
                 }
             }
             using (var s = File.OpenRead(path))

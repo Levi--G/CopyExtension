@@ -12,13 +12,14 @@ namespace CopyExtension
     {
         public event Action OnComplete;
         public event Action<bool> OnNewStatus;
+        public IOptionGui OptionGui { get; set; }
 
         public string ReadingVolume { get; protected set; }
         public string WritingVolume { get; protected set; }
         public virtual string FullAction => null;
         public string Action { get; protected set; }
         public string CurrentAction { get; protected set; }
-        public abstract string CurrentSpeed { get; }
+        public abstract string CurrentSpeedUnit { get; }
         public abstract long CurrentSpeedValue { get; }
 
         public long CurrentProgress { get; protected set; }
@@ -26,7 +27,6 @@ namespace CopyExtension
         public byte Progress => TotalProgress == 0 ? (byte)0 : (byte)(CurrentProgress * 100 / TotalProgress);
 
         public string CurrentName { get; protected set; }
-        public string CurrentTime { get; protected set; }
         public int CurrentItems { get; protected set; }
         public int TotalItems { get; protected set; }
 

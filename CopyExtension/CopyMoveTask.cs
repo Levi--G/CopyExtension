@@ -1,22 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 using ZetaLongPaths;
 
 namespace CopyExtension
 {
     internal class CopyMoveTask : CopyTask
     {
-        private const int BUFFERSIZE = 1024 * 1024; //81920
-
         private DateTime last;
         private long LastSpeedProgress;
         private long lastspeedvalue;
-        public override string CurrentSpeed => $"{TaskControl.GetHumanReadable(CurrentSpeedValue)}/s";
+        public override string CurrentSpeedUnit => "B";
 
         public override long CurrentSpeedValue
         {
@@ -38,18 +33,16 @@ namespace CopyExtension
 
         private string[] sourcefolders;
         private string target;
-        private bool move;
-        private bool compare;
+        private CopyJobType copyType;
 
-        public CopyMoveTask(string[] sourcefolders, string target, bool move = false, bool compare = false)
+        public CopyMoveTask(string[] sourcefolders, string target, CopyJobType copyType)
         {
             this.sourcefolders = sourcefolders.Select(f => f.TrimEnd('\\')).ToArray();
             this.target = target.TrimEnd('\\');
-            this.move = move;
-            this.compare = compare;
+            this.copyType = copyType;
             this.ReadingVolume = ZlpPathHelper.GetPathRoot(this.sourcefolders.First()).TrimEnd('\\');
             this.WritingVolume = ZlpPathHelper.GetPathRoot(this.target).TrimEnd('\\');
-            this.Action = move ? "Moving" : compare ? "Comparing" : "Copying";
+            this.Action = copyType == CopyJobType.Move ? "Moving" : copyType == CopyJobType.Compare ? "Comparing" : "Copying";
         }
 
         public override void Start()
@@ -58,25 +51,11 @@ namespace CopyExtension
             base.Start();
         }
 
-        private bool CheckCancel(ZlpFileInfo targetfile)
+        private ExistsAction ShowOverwriteDialog(IEnumerable<FileJob> items)
         {
-            if (CheckCancel())
-            {
-                if (!compare)
-                {
-                    try
-                    {
-                        targetfile.Refresh();
-                        if (targetfile.Exists)
-                        {
-                            targetfile.Delete();
-                        }
-                    }
-                    catch { }
-                }
-                return true;
-            }
-            return false;
+            return OptionGui.GetChoiceResult($"{items.Count()}/{TotalItems} files already exist, do you want to retry?",
+                            $"The following files already exist:{Environment.NewLine}{string.Join(Environment.NewLine, items.Select(e => $"{e.Source.OriginalPath} to {e.Target.OriginalPath}"))}",
+                            new[] { ExistsAction.Overwrite, ExistsAction.OverwriteFix, ExistsAction.Rename, ExistsAction.Skip });
         }
 
         private void DoWork()
@@ -85,152 +64,41 @@ namespace CopyExtension
             {
                 CurrentAction = "Discovery";
                 DoStatus(true);
-                var sources = sourcefolders.SelectMany(s => GetFiles(s, ZlpPathHelper.GetDirectoryPathNameFromFilePath(s), target)).ToList();
+                List<FileJob> jobs = Discover(sourcefolders, target);
+                while (jobs.Count > 0)
                 {
-                    var files = 0;
-                    long total = 0;
-                    foreach (var f in sources.Select(item => item.Source).OfType<ZlpFileInfo>())
+                    this.TotalItems = jobs.Count;
+                    this.TotalProgress = jobs.Sum(j => j.TotalProgress);
+                    DoStatus(true);
+                    if (CheckCancel()) { return; }
+                    var results = RunJobs(jobs).Where(r => !r.Success).ToList();
+                    jobs = results.Select(r => r.Job).ToList();
+                    if (CheckCancel() || results.Count == 0) { return; }
+                    if (results.Any(r => r.IsOverWriteError))
                     {
-                        files++;
-                        total += f.Length;
+                        var err = results.Where(r => r.IsOverWriteError).Select(r => r.Job).ToList();
+                        var method = ShowOverwriteDialog(err);
+                        jobs.ForEach(j => j.ExistsAction = method);
                     }
-                    if (!compare)
+                    if (results.Any(r => !r.IsOverWriteError))
                     {
-                        total *= 2;
-                    }
-                    this.TotalItems = files;
-                    this.TotalProgress = total;
-                }
-                DoStatus(true);
-                if (CheckCancel()) { return; }
-                long lastcopy = 0;
-                foreach (var item in sources)
-                {
-                    if (item.Source is ZlpFileInfo sourcefile && item.Target is ZlpFileInfo targetfile)
-                    {
-                        var length = sourcefile.Length;
-                        var same = false;
-                        while (!same && !IsCancelled)
+                        var err = results.Where(r => !r.IsOverWriteError).ToList();
+                        var method = OptionGui.GetChoiceResult($"{err.Count}/{TotalItems} jobs errored, do you want to retry?",
+                            $"The following files failed to copy:{Environment.NewLine}{string.Join(Environment.NewLine, err.Select(e => $"{e.Job.Source.OriginalPath}: {e.Reason}"))}",
+                            new[] { RetryAction.Retry, RetryAction.Skip });
+                        if (method != RetryAction.Retry)
                         {
-                            if (CheckCancel()) { return; }
-                            try
-                            {
-                                if (!compare)
-                                {
-                                    targetfile.Refresh();
-                                    if (targetfile.Exists)
-                                    {
-                                        targetfile.Delete();
-                                    }
-                                    CurrentAction = "Copying";
-                                    CurrentName = sourcefile.Name;
-                                    FastCopy(sourcefile, targetfile, (current) => { CurrentProgress = lastcopy + current; DoStatus(false); }, BUFFERSIZE);
-                                    //await CopyFileAsync(file.FullName, t.FullName);
-                                }
-                                CurrentProgress = lastcopy + length;
-                                CurrentAction = "Comparing";
-                                DoStatus(false);
-                                if (CheckCancel(targetfile)) { return; }
-                                Thread.Sleep(100);
-                                for (int i = 0; i < 3; i++)
-                                {
-                                    try
-                                    {
-                                        same = Compare(sourcefile, targetfile, (current) => { CurrentProgress = lastcopy + length + current; DoStatus(false); }, BUFFERSIZE);
-                                        break;
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        CurrentAction = "Errored";
-                                        CurrentName = $"Compare {sourcefile.Name}:{e.GetType().Name}: {e.Message}";
-                                        DoStatus(true);
-                                        Thread.Sleep(2000);
-                                        CurrentAction = "Comparing";
-                                        CurrentName = sourcefile.Name;
-                                        DoStatus(true);
-                                    }
-                                }
-                                if (same)
-                                {
-                                    if (move)
-                                    {
-                                        CurrentAction = "Deleting";
-                                        while (ZlpIOHelper.FileExists(sourcefile.FullName))
-                                        {
-                                            try
-                                            {
-                                                sourcefile.Delete();
-                                            }
-                                            catch (Exception e)
-                                            {
-                                                CurrentAction = "Errored";
-                                                CurrentName = $"Delete {sourcefile.Name}:{e.GetType().Name}: {e.Message}";
-                                                DoStatus(true);
-                                                Thread.Sleep(5000);
-                                                CurrentAction = "Deleting";
-                                                CurrentName = sourcefile.Name;
-                                                DoStatus(true);
-                                            }
-                                        }
-                                    }
-                                    if (compare)
-                                    {
-                                        CurrentAction = "Deleting";
-                                        while (ZlpIOHelper.FileExists(targetfile.FullName))
-                                        {
-                                            try
-                                            {
-                                                targetfile.Delete();
-                                            }
-                                            catch (Exception e)
-                                            {
-                                                CurrentAction = "Errored";
-                                                CurrentName = $"Delete {sourcefile.Name}:{e.GetType().Name}: {e.Message}";
-                                                DoStatus(true);
-                                                Thread.Sleep(5000);
-                                                CurrentAction = "Deleting";
-                                                CurrentName = sourcefile.Name;
-                                                DoStatus(true);
-                                            }
-                                        }
-                                    }
-                                }
-                                if (same || compare)
-                                {
-                                    CurrentItems++;
-                                    lastcopy += length;
-                                    if (!compare)
-                                    {
-                                        lastcopy += length;
-                                    }
-                                    DoStatus(false);
-                                }
-                                else
-                                {
-                                    if (CheckCancel(targetfile)) { return; }
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                CurrentAction = "Errored";
-                                CurrentName = $"{sourcefile.Name}:{e.GetType().Name}: {e.Message}";
-                                DoStatus(true);
-                                Thread.Sleep(5000);
-                            }
+                            return;
                         }
-                    }
-                    else if (item.Target is ZlpDirectoryInfo td && !compare)
-                    {
-                        td.Create();
                     }
                 }
             }
             catch (Exception e)
             {
+                CopyExtension.Logger.Log(this, e);
                 CurrentAction = "Errored";
                 CurrentName = $"{e.GetType().Name}: {e.Message}";
                 DoStatus(true);
-                Thread.Sleep(5000);
                 IsPaused = true;
                 CheckCancel();
             }
@@ -241,29 +109,176 @@ namespace CopyExtension
             }
         }
 
-        private void FastCopy(ZlpFileInfo file, ZlpFileInfo destination, Action<long> progresscallback, int bufferSize)
+        private enum RetryAction
         {
-            byte[] buffer = new byte[bufferSize], buffer2 = new byte[bufferSize];
-            bool swap = false;
-            int read;
-            long len = file.Length;
-            Task writer = null;
+            Retry, Skip
+        }
 
-            using (var source = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.SequentialScan))
-            using (var dest = new FileStream(destination.FullName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Write, bufferSize, FileOptions.SequentialScan))
+        private List<FileResult> RunJobs(List<FileJob> jobs)
+        {
+            var results = new List<FileResult>();
+            var key = new object();
+            RunJobs(jobs, (j, batched) =>
             {
-                dest.SetLength(source.Length);
-                for (long size = 0; size < len; size += read)
+                long start = CurrentProgress;
+                Action prog = null;
+                Action<string> proga = null;
+                if (!batched)
                 {
-                    if (CheckCancel()) { return; }
-                    progresscallback(size);
-                    read = source.Read(swap ? buffer : buffer2, 0, bufferSize);
-                    writer?.Wait();
-                    writer = dest.WriteAsync(swap ? buffer : buffer2, 0, read);
-                    swap = !swap;
+                    prog = () =>
+                    {
+                        CurrentProgress = start + j.CurrentProgress;
+                        DoStatus(false);
+                    };
+                    j.OnProgress += prog;
+                    proga = (s) =>
+                    {
+                        CurrentAction = s;
+                        DoStatus(true);
+                    };
+                    j.OnAction += proga;
+                    CurrentName = j.Name;
                 }
-                writer?.Wait();
+                var r = j.Copy();
+                if (!batched)
+                {
+                    j.OnProgress -= prog;
+                    j.OnAction -= proga;
+                    if (r.Success)
+                    {
+                        CurrentProgress = start + j.TotalProgress;
+                    }
+                    else
+                    {
+                        CurrentProgress = start;
+                    }
+                }
+                else
+                {
+                    if (r.Success)
+                    {
+                        lock (key)
+                        {
+                            CurrentProgress += j.TotalProgress;
+                        }
+                    }
+                    DoStatus(false);
+                }
+                lock (key)
+                {
+                    results.Add(r);
+                }
+            });
+            return results;
+        }
+
+        private void RunJobs(List<FileJob> jobs, Action<FileJob, bool> action)
+        {
+            if (CopyExtension.Options.SmallFileSize < 1)
+            {
+                foreach (var job in jobs)
+                {
+                    action(job, false);
+                    if (CheckCancel()) { break; }
+                }
+                return;
             }
+            if (jobs.Count < 1) { return; }
+            var q = new Queue<FileJob>(jobs);
+            var current = q.Dequeue();
+            while (current != null && !CheckCancel())
+            {
+                var next = q.Count > 0 ? q.Peek() : null;
+                if (current.IsFile)
+                {
+                    if (current.FileSize > CopyExtension.Options.SmallFileSize)
+                    {
+                        action(current, false);
+                        current = q.Count > 0 ? q.Dequeue() : null;
+                    }
+                    else
+                    {
+                        CurrentAction = copyType == CopyJobType.Copy ? FileJob.COPYING : (copyType == CopyJobType.Move ? FileJob.MOVING : FileJob.COMPARING);
+                        CurrentName = "Bulk operation";
+                        var key = new object();
+                        var busy = 0;
+
+                        while (current != null)
+                        {
+                            if (current.FileSize < CopyExtension.Options.SmallFileSize)
+                            {
+                                while (!CheckCancel())
+                                {
+                                    lock (key)
+                                    {
+                                        if (busy < 5)
+                                        {
+                                            break;
+                                        }
+                                    }
+                                    Thread.Sleep(10);
+                                }
+                                lock (key)
+                                {
+                                    busy++;
+                                }
+                                var threadeditem = current;
+                                ThreadPool.QueueUserWorkItem((a) =>
+                                {
+                                    try
+                                    {
+                                        action(threadeditem, true);
+                                    }
+                                    finally
+                                    {
+                                        lock (key)
+                                        {
+                                            busy--;
+                                        }
+                                    }
+                                });
+                            }
+                            else
+                            {
+                                break;
+                            }
+                            current = q.Count > 0 ? q.Dequeue() : null;
+                        }
+                        while (!CheckCancel())
+                        {
+                            lock (key)
+                            {
+                                if (busy == 0)
+                                {
+                                    break;
+                                }
+                            }
+                            Thread.Sleep(10);
+                        }
+                    }
+                }
+                else
+                {
+                    action(current, true);
+                    current = q.Count > 0 ? q.Dequeue() : null;
+                }
+            }
+        }
+
+        private List<FileJob> Discover(string[] sourcefolders, string target)
+        {
+            var sources = sourcefolders.SelectMany(s => GetFiles(s, ZlpPathHelper.GetDirectoryPathNameFromFilePath(s), target)).ToList();
+            this.TotalItems = sources.Count;
+            if (copyType == CopyJobType.Copy || copyType == CopyJobType.Move)
+            {
+                var existing = sources.Where(j => j.Target is ZlpFileInfo && j.Target.Exists).ToList();
+                if (existing.Count > 0)
+                {
+                    var method = ShowOverwriteDialog(existing);
+                    sources.ForEach(j => j.ExistsAction = method);
+                }
+            }
+            return sources;
         }
 
         private IEnumerable<FileJob> GetFiles(string f, string source, string target)
@@ -279,16 +294,16 @@ namespace CopyExtension
             else if (ZlpIOHelper.FileExists(f))
             {
                 ZlpFileInfo file = new ZlpFileInfo(f);
-                yield return new FileJob(file, new ZlpFileInfo(replacedir(f, source, target)));
+                yield return new FileJob(file, new ZlpFileInfo(replacedir(f, source, target)), copyType, CheckCancel);
             }
         }
 
         private IEnumerable<FileJob> GetFiles(ZlpDirectoryInfo dir, string source, string target)
         {
-            yield return new FileJob(dir, new ZlpDirectoryInfo(replacedir(dir.FullName, source, target)));
+            yield return new FileJob(dir, new ZlpDirectoryInfo(replacedir(dir.FullName, source, target)), copyType, CheckCancel);
             foreach (var file in dir.GetFiles())
             {
-                yield return new FileJob(file, new ZlpFileInfo(replacedir(file.FullName, source, target)));
+                yield return new FileJob(file, new ZlpFileInfo(replacedir(file.FullName, source, target)), copyType, CheckCancel);
             }
             foreach (var subdir in dir.GetDirectories())
             {
@@ -299,75 +314,9 @@ namespace CopyExtension
             }
         }
 
-        private string replacedir(string f, string source, string target)
+        private static string replacedir(string f, string source, string target)
         {
             return ZlpPathHelper.Combine(target + "\\", f.Replace(source, "").TrimStart('\\'));
-        }
-
-        private bool Compare(ZlpFileInfo f, ZlpFileInfo f2, Action<long> progresscallback, int buffersize)
-        {
-            for (int i = 0; i < 50; i++)
-            {
-                f.Refresh();
-                f2.Refresh();
-                if (f.Exists && f2.Exists)
-                {
-                    break;
-                }
-                Thread.Sleep(100);
-            }
-            if (!f.Exists || !f2.Exists) { return false; }
-            if (f.Length != f2.Length) { return false; }
-            byte[] buffer1 = new byte[buffersize];
-            byte[] buffer2 = new byte[buffersize];
-            byte[] buffer3 = new byte[buffersize];
-            byte[] buffer4 = new byte[buffersize];
-            using (var s = new FileStream(f.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, buffersize, FileOptions.SequentialScan))
-            using (var s2 = new FileStream(f2.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, buffersize, FileOptions.SequentialScan))
-            {
-                long total = 0;
-                int read = buffersize;
-                Task<bool> lastcomp = null;
-                bool swap = false;
-                while (read == buffersize)
-                {
-                    if (CheckCancel()) { return false; }
-                    swap = !swap;
-                    var b1 = s.ReadAsync(swap ? buffer1 : buffer3, 0, buffersize);
-                    var b2 = s2.ReadAsync(swap ? buffer2 : buffer4, 0, buffersize);
-                    Task.WhenAll(b1, b2).Wait();
-                    if ((read = b1.Result) != b2.Result) { return false; }
-                    total += read;
-                    progresscallback(total);
-                    lastcomp?.Wait();
-                    if (lastcomp != null && !lastcomp.Result) { return false; }
-                    lastcomp = ByteArrayCompareAsync(swap ? buffer1 : buffer3, swap ? buffer2 : buffer4, b1.Result);
-                }
-                lastcomp?.Wait();
-                if (lastcomp != null && !lastcomp.Result) { return false; }
-            }
-            return true;
-        }
-
-        [DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
-        private static extern int memcmp(byte[] b1, byte[] b2, long count);
-
-        private static Task<bool> ByteArrayCompareAsync(byte[] b1, byte[] b2, long count)
-        {
-            return Task.Factory.StartNew(() => memcmp(b1, b2, count) == 0);
-        }
-
-        private class FileJob
-        {
-            public FileJob(IZlpFileSystemInfo Source, IZlpFileSystemInfo Target)
-            {
-                this.Source = Source;
-                this.Target = Target;
-            }
-
-            public IZlpFileSystemInfo Source { get; set; }
-
-            public IZlpFileSystemInfo Target { get; set; }
         }
     }
 }

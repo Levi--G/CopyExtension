@@ -3,19 +3,17 @@ using System.Collections.Generic;
 //using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using ZetaLongPaths;
 
 namespace CopyExtension
 {
-    class HardlinkTask : CopyTask
+    internal class HardlinkTask : CopyTask
     {
-        DateTime last;
-        long LastSpeedProgress;
-        long lastspeedvalue;
-        public override string CurrentSpeed => $"{lastspeedvalue} items/s";
+        private DateTime last;
+        private long LastSpeedProgress;
+        private long lastspeedvalue;
+        public override string CurrentSpeedUnit => "items";
 
         public override long CurrentSpeedValue
         {
@@ -35,8 +33,8 @@ namespace CopyExtension
             }
         }
 
-        string[] sourcefolders;
-        string target;
+        private string[] sourcefolders;
+        private string target;
 
         public HardlinkTask(string[] sourcefolders, string target)
         {
@@ -55,7 +53,7 @@ namespace CopyExtension
             base.Start();
         }
 
-        void DoWork()
+        private void DoWork()
         {
             try
             {
@@ -151,7 +149,7 @@ namespace CopyExtension
         //    }
         //}
 
-        IEnumerable<FileJob> GetFiles(string f, string source, string target)
+        private IEnumerable<FileJob> GetFiles(string f, string source, string target)
         {
             if (ZlpIOHelper.DirectoryExists(f))
             {
@@ -184,7 +182,7 @@ namespace CopyExtension
         //    }
         //}
 
-        IEnumerable<FileJob> GetFiles(ZlpDirectoryInfo dir, string source, string target)
+        private IEnumerable<FileJob> GetFiles(ZlpDirectoryInfo dir, string source, string target)
         {
             yield return new FileJob(dir, new ZlpDirectoryInfo(replacedir(dir.FullName, source, target)));
             foreach (var file in dir.GetFiles())
@@ -200,7 +198,7 @@ namespace CopyExtension
             }
         }
 
-        string replacedir(string f, string source, string target)
+        private string replacedir(string f, string source, string target)
         {
             //return Path.Combine(target + "\\", f.Replace(source, "").TrimStart('\\'));
             return ZlpPathHelper.Combine(target + "\\", f.Replace(source, "").TrimStart('\\'));
@@ -219,7 +217,7 @@ namespace CopyExtension
         //    public FileSystemInfo Target { get; set; }
         //}
 
-        class FileJob
+        private class FileJob
         {
             public FileJob(IZlpFileSystemInfo Source, IZlpFileSystemInfo Target)
             {
@@ -233,7 +231,7 @@ namespace CopyExtension
         }
 
         [DllImport("Kernel32.dll", CharSet = CharSet.Unicode)]
-        static extern bool CreateHardLink(
+        private static extern bool CreateHardLink(
           string lpFileName,
           string lpExistingFileName,
           IntPtr lpSecurityAttributes

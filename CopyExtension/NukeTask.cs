@@ -2,23 +2,19 @@
 using System.Collections.Generic;
 //using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using ZetaLongPaths;
-using ZetaLongPaths.Tools;
 
 namespace CopyExtension
 {
-    class NukeTask : CopyTask
+    internal class NukeTask : CopyTask
     {
         public override string FullAction => $"{Action} on {WritingVolume}";
 
-        DateTime last;
-        long LastSpeedProgress;
-        long lastspeedvalue;
-        public override string CurrentSpeed => $"{lastspeedvalue} items/s";
+        private DateTime last;
+        private long LastSpeedProgress;
+        private long lastspeedvalue;
+        public override string CurrentSpeedUnit => "items";
         public override long CurrentSpeedValue
         {
             get
@@ -37,7 +33,8 @@ namespace CopyExtension
             }
         }
 
-        string[] target; bool dirmode;
+        private string[] target;
+        private bool dirmode;
         public NukeTask(IEnumerable<string> target, bool dirmode)
         {
             this.target = target.Select(f => f.TrimEnd('\\')).Where(t => ZlpIOHelper.DirectoryExists(t)).ToArray();
@@ -52,7 +49,7 @@ namespace CopyExtension
             base.Start();
         }
 
-        void DoWork()
+        private void DoWork()
         {
             try
             {
@@ -128,7 +125,7 @@ namespace CopyExtension
             }
         }
 
-        bool FindEmptyDirsRecursive(ZlpDirectoryInfo Dir, List<string> emptydirs)
+        private bool FindEmptyDirsRecursive(ZlpDirectoryInfo Dir, List<string> emptydirs)
         {
             if (IsCancelled) { return false; }
             var empty = true;
@@ -144,7 +141,7 @@ namespace CopyExtension
             return false;
         }
 
-        void FindEmptyFilesRecursive(ZlpDirectoryInfo Dir, List<string> emptyfiles)
+        private void FindEmptyFilesRecursive(ZlpDirectoryInfo Dir, List<string> emptyfiles)
         {
             if (IsCancelled) { return; }
             foreach (var subdir in Dir.GetDirectories())

@@ -6,9 +6,6 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace CopyExtension
@@ -16,16 +13,24 @@ namespace CopyExtension
     [ComVisible(true)]
     [COMServerAssociation(AssociationType.Directory)]
     [COMServerAssociation(AssociationType.DirectoryBackground)]
+    [COMServerAssociation(AssociationType.Drive)]
     public partial class CopyExtension : SharpContextMenu
     {
         public static Settings Options { get; private set; }
 
-        public CopyExtension()
+        public static Logger Logger { get; } = new Logger();
+
+        public static void Load()
         {
             if (Options == null)
             {
                 Options = Settings.Load();
             }
+        }
+
+        public CopyExtension()
+        {
+            Load();
         }
 
         protected override bool CanShowMenu()
@@ -128,10 +133,9 @@ namespace CopyExtension
 
         private void Copy_Click(object sender, EventArgs e)
         {
-            //Clipboard.GetFileDropList().Cast<string>();//SingleFolderPath
             if (DataOnClipboard && FolderExists)
             {
-                MainForm.AddTask(new CopyMoveTask(Clipboard.GetFileDropList().Cast<string>().ToArray(), SingleFolderPath));
+                MainForm.AddTask(new CopyMoveTask(Clipboard.GetFileDropList().Cast<string>().ToArray(), SingleFolderPath, CopyJobType.Copy));
             }
         }
 
@@ -139,7 +143,7 @@ namespace CopyExtension
         {
             if (DataOnClipboard && FolderExists)
             {
-                MainForm.AddTask(new CopyMoveTask(Clipboard.GetFileDropList().Cast<string>().ToArray(), SingleFolderPath, true));
+                MainForm.AddTask(new CopyMoveTask(Clipboard.GetFileDropList().Cast<string>().ToArray(), SingleFolderPath, CopyJobType.Move));
             }
         }
 
@@ -147,13 +151,12 @@ namespace CopyExtension
         {
             if (DataOnClipboard && FolderExists)
             {
-                MainForm.AddTask(new CopyMoveTask(Clipboard.GetFileDropList().Cast<string>().ToArray(), SingleFolderPath, false, true));
+                MainForm.AddTask(new CopyMoveTask(Clipboard.GetFileDropList().Cast<string>().ToArray(), SingleFolderPath, CopyJobType.Compare));
             }
         }
 
         private void Hardlinks_Click(object sender, EventArgs e)
         {
-            //Clipboard.GetFileDropList().Cast<string>();//SingleFolderPath
             if (DataOnClipboard && FolderExists)
             {
                 MainForm.AddTask(new HardlinkTask(Clipboard.GetFileDropList().Cast<string>().ToArray(), SingleFolderPath));
@@ -176,17 +179,17 @@ namespace CopyExtension
             }
         }
 
-        bool DataOnClipboard => Clipboard.GetFileDropList()?.Count > 0;
+        private bool DataOnClipboard => Clipboard.GetFileDropList()?.Count > 0;
 
-        bool FolderExists => !string.IsNullOrEmpty(SingleFolderPath) && Directory.Exists(SingleFolderPath);
+        private bool FolderExists => !string.IsNullOrEmpty(SingleFolderPath) && Directory.Exists(SingleFolderPath);
 
-        string SingleFolderPath => string.IsNullOrEmpty(FolderPath) ? SelectedItemPaths?.FirstOrDefault() : FolderPath;
+        private string SingleFolderPath => string.IsNullOrEmpty(FolderPath) ? SelectedItemPaths?.FirstOrDefault() : FolderPath;
 
-        bool MultiPathExists => SelectedItemPaths != null && SelectedItemPaths.Count() > 0;
+        private bool MultiPathExists => SelectedItemPaths != null && SelectedItemPaths.Count() > 0;
 
-        bool IsMultiPath => MultiPathExists && SelectedItemPaths.Count() > 1;
+        private bool IsMultiPath => MultiPathExists && SelectedItemPaths.Count() > 1;
 
-        IEnumerable<string> MultiFolderPaths
+        private IEnumerable<string> MultiFolderPaths
         {
             get
             {

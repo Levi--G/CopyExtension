@@ -1,7 +1,8 @@
 {
   "profiles": {
     "CopyExtension": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "test"
     }
   }
 }
