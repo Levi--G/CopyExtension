@@ -175,7 +175,7 @@ namespace CopyExtension
                         return new FileResult() { Job = this, Success = true };
                     }
                 }
-                else if (Target is ZlpDirectoryInfo td)
+                else if (Target is ZlpDirectoryInfo td && CopyType != CopyJobType.Compare)
                 {
                     td.Create();
                     return new FileResult() { Job = this, Success = true };
