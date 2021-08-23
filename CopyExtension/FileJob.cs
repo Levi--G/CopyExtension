@@ -151,7 +151,7 @@ namespace CopyExtension
                         OnAction?.Invoke(COPYING);
                         FastCopy(sourcefile, targetfile, ProgressP1, BUFFERSIZE);
                         OnAction?.Invoke(COMPARING);
-                        if (Compare(sourcefile, targetfile, ProgressP2, BUFFERSIZE))
+                        if (Compare(sourcefile, targetfile, ProgressP2, BUFFERSIZE, true))
                         {
                             if (CopyType == CopyJobType.Move)
                             {
@@ -168,7 +168,7 @@ namespace CopyExtension
                     if (CopyType == CopyJobType.Compare)
                     {
                         OnAction?.Invoke(COMPARING);
-                        if (Compare(sourcefile, targetfile, ProgressP1, BUFFERSIZE))
+                        if (Compare(sourcefile, targetfile, ProgressP1, BUFFERSIZE, false))
                         {
                             targetfile.Delete();
                         }
@@ -213,17 +213,25 @@ namespace CopyExtension
             }
         }
 
-        private bool Compare(ZlpFileInfo f, ZlpFileInfo f2, Action<long> progresscallback, int buffersize)
+        private bool Compare(ZlpFileInfo f, ZlpFileInfo f2, Action<long> progresscallback, int buffersize, bool shouldexist)
         {
-            for (int i = 0; i < 50; i++)
+            if (shouldexist)
+            {
+                for (int i = 0; i < 50; i++)
+                {
+                    f.Refresh();
+                    f2.Refresh();
+                    if (f.Exists && f2.Exists)
+                    {
+                        break;
+                    }
+                    Thread.Sleep(100);
+                }
+            }
+            else
             {
                 f.Refresh();
                 f2.Refresh();
-                if (f.Exists && f2.Exists)
-                {
-                    break;
-                }
-                Thread.Sleep(100);
             }
             if (!f.Exists || !f2.Exists) { return false; }
             if (f.Length != f2.Length) { return false; }
