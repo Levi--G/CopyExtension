@@ -10,38 +10,16 @@ namespace CopyExtension
 {
     internal class HardlinkTask : CopyTask
     {
-        private DateTime last;
-        private long LastSpeedProgress;
-        private long lastspeedvalue;
+        public override long SpeedSmoothingTolerance => 4;
         public override string CurrentSpeedUnit => "items";
-
-        public override long CurrentSpeedValue
-        {
-            get
-            {
-                var now = DateTime.Now;
-                var time = (long)(now - last).TotalMilliseconds;
-                if (time >= 500)
-                {
-                    var c = CurrentProgress;
-                    var newspeedvalue = Math.Max(0, (c - LastSpeedProgress) * 1000 / time);
-                    lastspeedvalue = Math.Abs(newspeedvalue - lastspeedvalue) < 4 ? newspeedvalue : (newspeedvalue + lastspeedvalue) / 2;
-                    last = now;
-                    LastSpeedProgress = c;
-                }
-                return lastspeedvalue;
-            }
-        }
 
         private string[] sourcefolders;
         private string target;
 
-        public HardlinkTask(string[] sourcefolders, string target)
+        public HardlinkTask(string[] sourcefolders, string target, Filter[] filters) : base(filters)
         {
             this.sourcefolders = sourcefolders.Select(f => f.TrimEnd('\\')).ToArray();
             this.target = target.TrimEnd('\\');
-            //this.ReadingVolume = Path.GetPathRoot(this.sourcefolders.First()).TrimEnd('\\');
-            //this.WritingVolume = Path.GetPathRoot(this.target).TrimEnd('\\');
             this.ReadingVolume = ZlpPathHelper.GetPathRoot(this.sourcefolders.First()).TrimEnd('\\');
             this.WritingVolume = ZlpPathHelper.GetPathRoot(this.target).TrimEnd('\\');
             this.Action = "Hardlinking";
@@ -59,19 +37,17 @@ namespace CopyExtension
             {
                 CurrentAction = "Discovery";
                 DoStatus(true);
-                //var sources = sourcefolders.SelectMany(s => GetFiles(s, Path.GetDirectoryName(s), target)).ToList();
                 var sources = sourcefolders.SelectMany(s => GetFiles(s, ZlpPathHelper.GetDirectoryPathNameFromFilePath(s), target)).ToList();
                 {
-                    //var files = sources.Select(item => item.Source).OfType<FileInfo>().Count();
                     var files = sources.Select(item => item.Source).OfType<ZlpFileInfo>().Count();
                     this.TotalItems = files;
                     this.TotalProgress = files;
                 }
                 DoStatus(true);
+                sources.RemoveAll(i => !MatchesFilters(i.Source));
                 if (CheckCancel()) { return; }
                 foreach (var item in sources)
                 {
-                    //if (item.Source is FileInfo sourcefile && item.Target is FileInfo targetfile)
                     if (item.Source is ZlpFileInfo sourcefile && item.Target is ZlpFileInfo targetfile)
                     {
                         var same = false;
@@ -88,16 +64,13 @@ namespace CopyExtension
                                 {
                                     targetfile.Delete();
                                 }
+                                targetfile.Directory.SafeCheckCreate();
                                 same = CreateHardLink(IOHelper.CheckAddLongPathPrefix(targetfile.FullName), IOHelper.CheckAddLongPathPrefix(sourcefile.FullName), IntPtr.Zero);
                                 if (same)
                                 {
                                     CurrentItems++;
                                     CurrentProgress++;
                                     DoStatus(false);
-                                }
-                                else
-                                {
-
                                 }
                             }
                             catch (Exception e)
@@ -109,7 +82,6 @@ namespace CopyExtension
                             }
                         }
                     }
-                    //else if (item.Target is DirectoryInfo td)
                     else if (item.Target is ZlpDirectoryInfo td)
                     {
                         td.Create();
@@ -132,23 +104,6 @@ namespace CopyExtension
             }
         }
 
-        //IEnumerable<FileJob> GetFiles(string f, string source, string target)
-        //{
-        //    if (Directory.Exists(f))
-        //    {
-        //        DirectoryInfo dir = new DirectoryInfo(f);
-        //        foreach (var item in GetFiles(dir, source, target))
-        //        {
-        //            yield return item;
-        //        }
-        //    }
-        //    else if (File.Exists(f))
-        //    {
-        //        FileInfo file = new FileInfo(f);
-        //        yield return new FileJob(file, new FileInfo(replacedir(f, source, target)));
-        //    }
-        //}
-
         private IEnumerable<FileJob> GetFiles(string f, string source, string target)
         {
             if (ZlpIOHelper.DirectoryExists(f))
@@ -162,32 +117,16 @@ namespace CopyExtension
             else if (ZlpIOHelper.FileExists(f))
             {
                 ZlpFileInfo file = new ZlpFileInfo(f);
-                yield return new FileJob(file, new ZlpFileInfo(replacedir(f, source, target)));
+                yield return new FileJob(file, new ZlpFileInfo(Replacedir(f, source, target)));
             }
         }
 
-        //IEnumerable<FileJob> GetFiles(DirectoryInfo dir, string source, string target)
-        //{
-        //    yield return new FileJob(dir, new DirectoryInfo(replacedir(dir.FullName, source, target)));
-        //    foreach (var file in dir.EnumerateFileSystemInfos())
-        //    {
-        //        yield return new FileJob(file, new FileInfo(replacedir(file.FullName, source, target)));
-        //    }
-        //    foreach (var subdir in dir.GetDirectories())
-        //    {
-        //        foreach (var item in GetFiles(subdir, source, target))
-        //        {
-        //            yield return item;
-        //        }
-        //    }
-        //}
-
         private IEnumerable<FileJob> GetFiles(ZlpDirectoryInfo dir, string source, string target)
         {
-            yield return new FileJob(dir, new ZlpDirectoryInfo(replacedir(dir.FullName, source, target)));
+            yield return new FileJob(dir, new ZlpDirectoryInfo(Replacedir(dir.FullName, source, target)));
             foreach (var file in dir.GetFiles())
             {
-                yield return new FileJob(file, new ZlpFileInfo(replacedir(file.FullName, source, target)));
+                yield return new FileJob(file, new ZlpFileInfo(Replacedir(file.FullName, source, target)));
             }
             foreach (var subdir in dir.GetDirectories())
             {
@@ -197,25 +136,6 @@ namespace CopyExtension
                 }
             }
         }
-
-        private string replacedir(string f, string source, string target)
-        {
-            //return Path.Combine(target + "\\", f.Replace(source, "").TrimStart('\\'));
-            return ZlpPathHelper.Combine(target + "\\", f.Replace(source, "").TrimStart('\\'));
-        }
-
-        //class FileJob
-        //{
-        //    public FileJob(FileSystemInfo Source, FileSystemInfo Target)
-        //    {
-        //        this.Source = Source;
-        //        this.Target = Target;
-        //    }
-
-        //    public FileSystemInfo Source { get; set; }
-
-        //    public FileSystemInfo Target { get; set; }
-        //}
 
         private class FileJob
         {

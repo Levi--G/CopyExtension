@@ -82,7 +82,7 @@ namespace CopyExtension
         {
             if (this.IsHandleCreated)
             {
-                //Add/remove tasks visuall or close self when not in use
+                //Add/remove tasks visually or close self when not in use
                 //check for starting tasks sharing volume after completion
                 this.BeginInvoke((Action)(() =>
                 {
@@ -92,6 +92,10 @@ namespace CopyExtension
                         {
                             flowLayoutPanel1.Controls.Remove(d.Value);
                             controls.TryRemove(d.Key, out _);
+                            if (d.Key.FollowUpTask != null)
+                            {
+                                controls.TryAdd(d.Key.FollowUpTask, null);
+                            }
                         });
                         controls.Where(c => c.Value == null).ToList().ForEach(n =>
                         {

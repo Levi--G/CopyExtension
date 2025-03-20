@@ -40,7 +40,7 @@ namespace CopyExtension
             label1.Text = task.FullAction ?? $"{task.Action} {task.TotalItems} items from {task.ReadingVolume} to {task.WritingVolume}";
             label2.Text = $"{GetStateFromTask()} - {task.Progress}% complete";
             progressBar1.Maximum = 100;
-            progressBar1.Value = task.Progress;
+            progressBar1.Value = Math.Min((byte)100, task.Progress);
             label3.Text = $"Name: {task.CurrentName}";
             var speed = task.CurrentSpeedValue;
             label4.Text = $"Time remaining: {ToHumanDuration(RemainingTime(speed))}";

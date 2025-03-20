@@ -8,47 +8,28 @@ namespace CopyExtension
 {
     internal class CopyMoveTask : CopyTask
     {
-        private DateTime last;
-        private long LastSpeedProgress;
-        private long lastspeedvalue;
         public override string CurrentSpeedUnit => "B";
 
-        public override long CurrentSpeedValue
-        {
-            get
-            {
-                var now = DateTime.Now;
-                var time = (long)(now - last).TotalMilliseconds;
-                if (time >= 500)
-                {
-                    var c = CurrentProgress;
-                    var newspeedvalue = Math.Max(0, (c - LastSpeedProgress) * 1000 / time);
-                    lastspeedvalue = Math.Abs(newspeedvalue - lastspeedvalue) < 10 * 1024 * 1024 ? newspeedvalue : (newspeedvalue + lastspeedvalue) / 2;
-                    last = now;
-                    LastSpeedProgress = c;
-                }
-                return lastspeedvalue;
-            }
-        }
+        public override long SpeedSmoothingTolerance => 10 * 1024 * 1024;
 
         private string[] sourcefolders;
         private string target;
         private CopyJobType copyType;
 
-        public CopyMoveTask(string[] sourcefolders, string target, CopyJobType copyType)
+        public CopyMoveTask(string[] sourcefolders, string target, CopyJobType copyType, Filter[] filters) : base(filters)
         {
             this.sourcefolders = sourcefolders.Select(f => f.TrimEnd('\\')).ToArray();
             this.target = target.TrimEnd('\\');
             this.copyType = copyType;
             this.ReadingVolume = ZlpPathHelper.GetPathRoot(this.sourcefolders.First()).TrimEnd('\\');
             this.WritingVolume = ZlpPathHelper.GetPathRoot(this.target).TrimEnd('\\');
-            this.Action = copyType == CopyJobType.Move ? "Moving" : copyType == CopyJobType.Compare ? "Comparing" : "Copying";
+            this.Action = copyType == CopyJobType.Compare ? "Comparing" : (copyType == CopyJobType.Move || copyType == CopyJobType.MoveUnsafe) ? "Moving" : "Copying";
         }
 
         public override void Start()
         {
-            new Thread(DoWork).Start();
             base.Start();
+            new Thread(DoWork).Start();
         }
 
         private ExistsAction ShowOverwriteDialog(IEnumerable<FileJob> items)
@@ -65,8 +46,11 @@ namespace CopyExtension
                 CurrentAction = "Discovery";
                 DoStatus(true);
                 List<FileJob> jobs = Discover(sourcefolders, target);
+                jobs.RemoveAll(i => !MatchesFilters(i.Source));
+                this.TotalItems = jobs.Count;
                 while (jobs.Count > 0)
                 {
+                    jobs.ForEach(j => j.Reset());
                     this.TotalItems = jobs.Count;
                     this.TotalProgress = jobs.Sum(j => j.TotalProgress);
                     DoStatus(true);
@@ -92,6 +76,7 @@ namespace CopyExtension
                         }
                     }
                 }
+                IsSuccess = true;
             }
             catch (Exception e)
             {
@@ -198,7 +183,7 @@ namespace CopyExtension
                     }
                     else
                     {
-                        CurrentAction = copyType == CopyJobType.Copy ? FileJob.COPYING : (copyType == CopyJobType.Move ? FileJob.MOVING : FileJob.COMPARING);
+                        CurrentAction = (copyType == CopyJobType.Copy || copyType == CopyJobType.CopyUnsafe) ? FileJob.COPYING : ((copyType == CopyJobType.Move || copyType == CopyJobType.MoveUnsafe) ? FileJob.MOVING : FileJob.COMPARING);
                         CurrentName = "Bulk operation";
                         var key = new object();
                         var busy = 0;
@@ -268,8 +253,7 @@ namespace CopyExtension
         private List<FileJob> Discover(string[] sourcefolders, string target)
         {
             var sources = sourcefolders.SelectMany(s => GetFiles(s, ZlpPathHelper.GetDirectoryPathNameFromFilePath(s), target)).ToList();
-            this.TotalItems = sources.Count;
-            if (copyType == CopyJobType.Copy || copyType == CopyJobType.Move)
+            if (copyType == CopyJobType.Copy || copyType == CopyJobType.Move || copyType == CopyJobType.CopyUnsafe || copyType == CopyJobType.MoveUnsafe)
             {
                 var existing = sources.Where(j => j.Target is ZlpFileInfo && j.Target.Exists).ToList();
                 if (existing.Count > 0)
@@ -294,16 +278,16 @@ namespace CopyExtension
             else if (ZlpIOHelper.FileExists(f))
             {
                 ZlpFileInfo file = new ZlpFileInfo(f);
-                yield return new FileJob(file, new ZlpFileInfo(replacedir(f, source, target)), copyType, CheckCancel);
+                yield return new FileJob(file, new ZlpFileInfo(Replacedir(f, source, target)), copyType, CheckCancel);
             }
         }
 
         private IEnumerable<FileJob> GetFiles(ZlpDirectoryInfo dir, string source, string target)
         {
-            yield return new FileJob(dir, new ZlpDirectoryInfo(replacedir(dir.FullName, source, target)), copyType, CheckCancel);
+            yield return new FileJob(dir, new ZlpDirectoryInfo(Replacedir(dir.FullName, source, target)), copyType, CheckCancel);
             foreach (var file in dir.GetFiles())
             {
-                yield return new FileJob(file, new ZlpFileInfo(replacedir(file.FullName, source, target)), copyType, CheckCancel);
+                yield return new FileJob(file, new ZlpFileInfo(Replacedir(file.FullName, source, target)), copyType, CheckCancel);
             }
             foreach (var subdir in dir.GetDirectories())
             {
@@ -312,11 +296,6 @@ namespace CopyExtension
                     yield return item;
                 }
             }
-        }
-
-        private static string replacedir(string f, string source, string target)
-        {
-            return ZlpPathHelper.Combine(target + "\\", f.Replace(source, "").TrimStart('\\'));
         }
     }
 }

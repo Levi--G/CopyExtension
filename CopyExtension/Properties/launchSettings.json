@@ -2,7 +2,7 @@
   "profiles": {
     "CopyExtension": {
       "commandName": "Project",
-      "commandLineArgs": "test"
+      "commandLineArgs": "Custom \"Move shortcuts to Desktop\" from|from2"
     }
   }
 }

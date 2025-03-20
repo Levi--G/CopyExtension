@@ -124,6 +124,52 @@ namespace CopyExtension
                 item.DropDownItems.Add(files);
             }
 
+            if (Options.CustomCommands != null)
+            {
+                foreach (var custom in Options.CustomCommands)
+                {
+                    var c = new ToolStripMenuItem
+                    {
+                        Text = custom.Name
+                    };
+
+                    c.Click += (s, e) => Custom_Click(custom);
+
+                    item.DropDownItems.Add(c);
+                }
+            }
+            //var customs = Options.CustomCommands?.Select(custom =>
+            //{
+            //    var c = new ToolStripMenuItem
+            //    {
+            //        Text = custom.Name
+            //    };
+
+            //    c.Click += (s, e) => Custom_Click(custom);
+
+            //    return c;
+            //}).ToArray() ?? Array.Empty<ToolStripMenuItem>();
+            //if (customs.Length > 0)
+            //{
+            //    var custom = new ToolStripMenuItem
+            //    {
+            //        Text = "Custom"
+            //    };
+
+            //    custom.DropDownItems.AddRange(customs);
+
+            //    item.DropDownItems.Add(custom);
+            //}
+
+            var reload = new ToolStripMenuItem
+            {
+                Text = "Reload Config"
+            };
+
+            reload.Click += Reload_Click;
+
+            item.DropDownItems.Add(reload);
+
             //  Add the item to the context menu.
             menu.Items.Add(item);
 
@@ -135,7 +181,7 @@ namespace CopyExtension
         {
             if (DataOnClipboard && FolderExists)
             {
-                MainForm.AddTask(new CopyMoveTask(Clipboard.GetFileDropList().Cast<string>().ToArray(), SingleFolderPath, CopyJobType.Copy));
+                MainForm.AddTask(new CopyMoveTask(ClipboardData, SingleFolderPath, CopyJobType.Copy, null));
             }
         }
 
@@ -143,7 +189,7 @@ namespace CopyExtension
         {
             if (DataOnClipboard && FolderExists)
             {
-                MainForm.AddTask(new CopyMoveTask(Clipboard.GetFileDropList().Cast<string>().ToArray(), SingleFolderPath, CopyJobType.Move));
+                MainForm.AddTask(new CopyMoveTask(ClipboardData, SingleFolderPath, CopyJobType.Move, null));
             }
         }
 
@@ -151,7 +197,7 @@ namespace CopyExtension
         {
             if (DataOnClipboard && FolderExists)
             {
-                MainForm.AddTask(new CopyMoveTask(Clipboard.GetFileDropList().Cast<string>().ToArray(), SingleFolderPath, CopyJobType.Compare));
+                MainForm.AddTask(new CopyMoveTask(ClipboardData, SingleFolderPath, CopyJobType.Compare, null));
             }
         }
 
@@ -159,7 +205,7 @@ namespace CopyExtension
         {
             if (DataOnClipboard && FolderExists)
             {
-                MainForm.AddTask(new HardlinkTask(Clipboard.GetFileDropList().Cast<string>().ToArray(), SingleFolderPath));
+                MainForm.AddTask(new HardlinkTask(ClipboardData, SingleFolderPath, null));
             }
         }
 
@@ -167,7 +213,7 @@ namespace CopyExtension
         {
             if (FolderExists)
             {
-                MainForm.AddTask(new NukeTask(MultiFolderPaths, true));
+                MainForm.AddTask(new NukeTask(MultiFolderPaths, true, null));
             }
         }
 
@@ -175,11 +221,30 @@ namespace CopyExtension
         {
             if (FolderExists)
             {
-                MainForm.AddTask(new NukeTask(MultiFolderPaths, false));
+                MainForm.AddTask(new NukeTask(MultiFolderPaths, false, null));
+            }
+        }
+
+        private void Reload_Click(object sender, EventArgs e)
+        {
+            Options = Settings.Load();
+        }
+
+        private void Custom_Click(CustomCommandSetting item)
+        {
+            try
+            {
+                MainForm.AddTask(item.ToTask(MultiFolderPaths.ToArray(), ClipboardData));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, ex.GetType().FullName);
             }
         }
 
         private bool DataOnClipboard => Clipboard.GetFileDropList()?.Count > 0;
+
+        private string[] ClipboardData => DataOnClipboard ? Clipboard.GetFileDropList().Cast<string>().ToArray() : Array.Empty<string>();
 
         private bool FolderExists => !string.IsNullOrEmpty(SingleFolderPath) && Directory.Exists(SingleFolderPath);
 

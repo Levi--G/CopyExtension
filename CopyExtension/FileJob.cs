@@ -12,7 +12,7 @@ namespace CopyExtension
         public const string COPYING = "Copying";
         public const string COMPARING = "Comparing";
         public const string DELETING = "Deleting";
-        public const string MOVING = "Deleting";
+        public const string MOVING = "Moving";
         //const string ERRORED = "Errored";
 
         private const int BUFFERSIZE = 1024 * 1024; //1M for fast or 81920 for default .net
@@ -55,6 +55,11 @@ namespace CopyExtension
         public string Name => Source.Name;
 
         public bool IsFile { get; }
+
+        public void Reset()
+        {
+            CurrentProgress = 0;
+        }
 
         private bool CheckCancel()
         {
@@ -125,7 +130,7 @@ namespace CopyExtension
                         SourceFile.Refresh();
                         TargetFile.Refresh();
                         //FastResume(sourcefile, targetfile, null, BUFFERSIZE);
-                        if ((CopyType == CopyJobType.Copy || CopyType == CopyJobType.Move) && Target.Exists)
+                        if ((CopyType == CopyJobType.Copy || CopyType == CopyJobType.Move || CopyType == CopyJobType.CopyUnsafe || CopyType == CopyJobType.MoveUnsafe) && Target.Exists)
                         {
                             switch (ExistsAction)
                             {
@@ -145,11 +150,39 @@ namespace CopyExtension
                     }
                     var sourcefile = SourceFile;
                     var targetfile = TargetFile;
+                    if (CopyType == CopyJobType.CopyUnsafe)
+                    {
+                        FileCreated = true;
+                        OnAction?.Invoke(COPYING);
+                        try
+                        {
+                            targetfile.Directory.SafeCheckCreate();
+                            sourcefile.CopyTo(targetfile.FullName, true);
+                            TryCloneDates(sourcefile, targetfile);
+                            return new FileResult() { Job = this, Success = true };
+                        }
+                        catch { }
+                    }
+                    if (CopyType == CopyJobType.MoveUnsafe)
+                    {
+                        FileCreated = true;
+                        OnAction?.Invoke(COPYING);
+                        try
+                        {
+                            targetfile.Directory.SafeCheckCreate();
+                            sourcefile.MoveTo(targetfile.FullName, true);
+                            TryCloneDates(sourcefile, targetfile);
+                            return new FileResult() { Job = this, Success = true };
+                        }
+                        catch { }
+                    }
                     if (CopyType == CopyJobType.Copy || CopyType == CopyJobType.Move)
                     {
                         FileCreated = true;
                         OnAction?.Invoke(COPYING);
+                        targetfile.Directory.SafeCheckCreate();
                         FastCopy(sourcefile, targetfile, ProgressP1, BUFFERSIZE);
+                        TryCloneDates(sourcefile, targetfile);
                         OnAction?.Invoke(COMPARING);
                         if (Compare(sourcefile, targetfile, ProgressP2, BUFFERSIZE, true))
                         {
@@ -195,7 +228,6 @@ namespace CopyExtension
             int read;
             long len = file.Length;
             Task writer = null;
-
             using (var source = new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, FileOptions.SequentialScan))
             using (var dest = new FileStream(destination.FullName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Write, bufferSize, FileOptions.SequentialScan))
             {
@@ -264,6 +296,31 @@ namespace CopyExtension
                 if (lastcomp != null && !lastcomp.Result) { return false; }
             }
             return true;
+        }
+
+        private static void TryCloneDates(ZlpFileInfo sourceFilePath, ZlpFileInfo destinationFilePath)
+        {
+            try
+            {
+                DateTime creationTime = sourceFilePath.CreationTime;
+                DateTime lastAccessTime = sourceFilePath.LastAccessTime;
+                DateTime lastWriteTime = sourceFilePath.LastWriteTime;
+                if (creationTime > DateTime.MinValue)
+                {
+                    destinationFilePath.CreationTime = creationTime;
+                }
+
+                if (lastAccessTime > DateTime.MinValue)
+                {
+                    destinationFilePath.LastAccessTime = lastAccessTime;
+                }
+
+                if (lastWriteTime > DateTime.MinValue)
+                {
+                    destinationFilePath.LastWriteTime = lastWriteTime;
+                }
+            }
+            catch { }
         }
 
         //private void FastResume(ZlpFileInfo file, ZlpFileInfo destination, Action<long> progresscallback, int bufferSize)
@@ -339,7 +396,7 @@ namespace CopyExtension
 
     internal enum CopyJobType
     {
-        Copy, Move, Compare
+        Copy, Move, Compare, CopyUnsafe, MoveUnsafe
     }
 
     internal enum ExistsAction

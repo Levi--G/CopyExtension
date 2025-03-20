@@ -7,7 +7,7 @@ using ZetaLongPaths;
 
 namespace CopyExtension
 {
-    internal class NukeTask : CopyTask
+    internal class DeleteTask : CopyTask
     {
         public override string FullAction => $"{Action} on {WritingVolume}";
 
@@ -15,13 +15,11 @@ namespace CopyExtension
         public override string CurrentSpeedUnit => "items";
 
         private string[] target;
-        private bool dirmode;
-        public NukeTask(IEnumerable<string> target, bool dirmode, Filter[] filters) : base(filters)
+        public DeleteTask(IEnumerable<string> target, Filter[] filters) : base(filters)
         {
-            this.target = target.Select(f => f.TrimEnd('\\')).Where(t => ZlpIOHelper.DirectoryExists(t)).ToArray();
-            this.dirmode = dirmode;
+            this.target = target.Select(f => f.TrimEnd('\\')).ToArray();
             this.WritingVolume = ZlpPathHelper.GetPathRoot(this.target.First()).TrimEnd('\\');
-            this.Action = "Nuking folders";
+            this.Action = "Delete";
         }
 
         public override void Start()
@@ -36,24 +34,13 @@ namespace CopyExtension
             {
                 CurrentAction = "Discovery";
                 DoStatus(true);
+                var targets = target.Select(t => ZlpIOHelper.DirectoryExists(t) ? new ZlpDirectoryInfo(t) : (ZlpIOHelper.FileExists(t) ? new ZlpFileInfo(t) : (IZlpFileSystemInfo)null)).Where(t => t != null).ToList();
                 var todelete = new List<IZlpFileSystemInfo>();
-                if (dirmode)
+                foreach (var fd in targets)
                 {
-                    foreach (var dir in target)
+                    if (fd is ZlpDirectoryInfo dir)
                     {
-                        var root = new ZlpDirectoryInfo(dir);
-                        FindEmptyDirsRecursive(root, todelete);
-                        if (todelete.Contains(root))
-                        {
-                            todelete.Remove(root);
-                        }
-                    }
-                }
-                else
-                {
-                    foreach (var dir in target)
-                    {
-                        FindEmptyFilesRecursive(new ZlpDirectoryInfo(dir), todelete);
+                        FindItemsRecursive(dir, todelete);
                     }
                 }
                 todelete.RemoveAll(i => !MatchesFilters(i));
@@ -107,35 +94,17 @@ namespace CopyExtension
             }
         }
 
-        private bool FindEmptyDirsRecursive(ZlpDirectoryInfo Dir, List<IZlpFileSystemInfo> emptydirs)
-        {
-            if (IsCancelled) { return false; }
-            var empty = true;
-            foreach (var subdir in Dir.GetDirectories())
-            {
-                empty &= FindEmptyDirsRecursive(subdir, emptydirs);
-            }
-            if (empty && !Dir.GetFiles().Any(f => f.Name != "Thumbs.db"))
-            {
-                emptydirs.Add(Dir);
-                return true;
-            }
-            return false;
-        }
-
-        private void FindEmptyFilesRecursive(ZlpDirectoryInfo Dir, List<IZlpFileSystemInfo> emptyfiles)
+        private void FindItemsRecursive(ZlpDirectoryInfo Dir, List<IZlpFileSystemInfo> items)
         {
             if (IsCancelled) { return; }
             foreach (var subdir in Dir.GetDirectories())
             {
-                FindEmptyFilesRecursive(subdir, emptyfiles);
+                items.Add(subdir);
+                FindItemsRecursive(subdir, items);
             }
             foreach (var file in Dir.GetFiles())
             {
-                if (file.Length == 0)
-                {
-                    emptyfiles.Add(file);
-                }
+                items.Add(file);
             }
         }
     }
