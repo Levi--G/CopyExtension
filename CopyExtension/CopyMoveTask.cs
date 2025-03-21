@@ -6,7 +6,7 @@ using ZetaLongPaths;
 
 namespace CopyExtension
 {
-    internal class CopyMoveTask : CopyTask
+    public class CopyMoveTask : CopyTask
     {
         public override string CurrentSpeedUnit => "B";
 

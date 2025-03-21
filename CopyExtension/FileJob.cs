@@ -394,7 +394,7 @@ namespace CopyExtension
         }
     }
 
-    internal enum CopyJobType
+    public enum CopyJobType
     {
         Copy, Move, Compare, CopyUnsafe, MoveUnsafe
     }

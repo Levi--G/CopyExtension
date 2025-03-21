@@ -7,7 +7,7 @@ using ZetaLongPaths;
 
 namespace CopyExtension
 {
-    internal class NukeTask : CopyTask
+    public class NukeTask : CopyTask
     {
         public override string FullAction => $"{Action} on {WritingVolume}";
 
