@@ -203,7 +203,7 @@ namespace CopyExtension
                         OnAction?.Invoke(COMPARING);
                         if (Compare(sourcefile, targetfile, ProgressP1, BUFFERSIZE, false))
                         {
-                            targetfile.Delete();
+                            targetfile.ForceDelete();
                         }
                         return new FileResult() { Job = this, Success = true };
                     }

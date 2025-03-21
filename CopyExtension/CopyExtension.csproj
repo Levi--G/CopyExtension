@@ -3,7 +3,7 @@
     <TargetFramework>net48</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>2.2.1</Version>
+    <Version>2.2.2</Version>
     <OutputType>Library</OutputType>
   </PropertyGroup>
 

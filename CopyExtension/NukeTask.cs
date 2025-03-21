@@ -73,13 +73,20 @@ namespace CopyExtension
                         {
                             if (dir.SafeExists())
                             {
-                                dir.SafeDeleteContents();
-                                dir.SafeDelete();
+                                try
+                                {
+                                    dir.ForceDelete();
+                                }
+                                catch { }
                             }
                         }
                         else if (item is ZlpFileInfo file)
                         {
-                            file.SafeDelete();
+                            try
+                            {
+                                file.ForceDelete();
+                            }
+                            catch { }
                         }
                     }
                     catch
