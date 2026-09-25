@@ -207,8 +207,18 @@ namespace CopyExtension
                         }
                         return new FileResult() { Job = this, Success = true };
                     }
+                    if (CopyType == CopyJobType.CompareNames)
+                    {
+                        OnAction?.Invoke(COMPARING);
+                        targetfile.ForceDelete();
+                        //if (Compare(sourcefile, targetfile, ProgressP1, BUFFERSIZE, false))
+                        //{
+                        //    targetfile.ForceDelete();
+                        //}
+                        return new FileResult() { Job = this, Success = true };
+                    }
                 }
-                else if (Target is ZlpDirectoryInfo td && CopyType != CopyJobType.Compare)
+                else if (Target is ZlpDirectoryInfo td && CopyType != CopyJobType.Compare && CopyType != CopyJobType.CompareNames)
                 {
                     td.Create();
                     return new FileResult() { Job = this, Success = true };
@@ -396,7 +406,7 @@ namespace CopyExtension
 
     public enum CopyJobType
     {
-        Copy, Move, Compare, CopyUnsafe, MoveUnsafe
+        Copy, Move, Compare, CopyUnsafe, MoveUnsafe, CompareNames
     }
 
     internal enum ExistsAction

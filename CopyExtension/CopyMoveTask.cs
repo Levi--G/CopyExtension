@@ -23,7 +23,7 @@ namespace CopyExtension
             this.copyType = copyType;
             this.ReadingVolume = ZlpPathHelper.GetPathRoot(this.sourcefolders.First()).TrimEnd('\\');
             this.WritingVolume = ZlpPathHelper.GetPathRoot(this.target).TrimEnd('\\');
-            this.Action = copyType == CopyJobType.Compare ? "Comparing" : (copyType == CopyJobType.Move || copyType == CopyJobType.MoveUnsafe) ? "Moving" : "Copying";
+            this.Action = (copyType == CopyJobType.Compare || copyType == CopyJobType.CompareNames) ? "Comparing" : (copyType == CopyJobType.Move || copyType == CopyJobType.MoveUnsafe) ? "Moving" : "Copying";
         }
 
         public override void Start()
@@ -252,17 +252,57 @@ namespace CopyExtension
 
         private List<FileJob> Discover(string[] sourcefolders, string target)
         {
-            var sources = sourcefolders.SelectMany(s => GetFiles(s, ZlpPathHelper.GetDirectoryPathNameFromFilePath(s), target)).ToList();
-            if (copyType == CopyJobType.Copy || copyType == CopyJobType.Move || copyType == CopyJobType.CopyUnsafe || copyType == CopyJobType.MoveUnsafe)
+            if (copyType != CopyJobType.CompareNames)
             {
-                var existing = sources.Where(j => j.Target is ZlpFileInfo && j.Target.Exists).ToList();
-                if (existing.Count > 0)
+                var sources = sourcefolders.SelectMany(s => GetFiles(s, ZlpPathHelper.GetDirectoryPathNameFromFilePath(s), target)).ToList();
+                if (copyType == CopyJobType.Copy || copyType == CopyJobType.Move || copyType == CopyJobType.CopyUnsafe || copyType == CopyJobType.MoveUnsafe)
                 {
-                    var method = ShowOverwriteDialog(existing);
-                    sources.ForEach(j => j.ExistsAction = method);
+                    var existing = sources.Where(j => j.Target is ZlpFileInfo && j.Target.Exists).ToList();
+                    if (existing.Count > 0)
+                    {
+                        var method = ShowOverwriteDialog(existing);
+                        sources.ForEach(j => j.ExistsAction = method);
+                    }
                 }
+                return sources;
             }
-            return sources;
+            else if (copyType == CopyJobType.CompareNames)
+            {
+                IEnumerable<string> Recurse(ZlpDirectoryInfo d)
+                {
+                    foreach (var dir in d.GetDirectories())
+                    {
+                        foreach (var file in Recurse(dir))
+                        {
+                            yield return file;
+                        }
+                    }
+                    foreach (var file in d.GetFiles())
+                    {
+                        yield return file.FullName;
+                    }
+                }
+                IEnumerable<string> Recurses(string s)
+                {
+                    if (ZlpIOHelper.DirectoryExists(s))
+                    {
+                        ZlpDirectoryInfo dir = new ZlpDirectoryInfo(s);
+                        foreach (var item in Recurse(dir))
+                        {
+                            yield return item;
+                        }
+                    }
+                    else if (ZlpIOHelper.FileExists(s))
+                    {
+                        ZlpFileInfo file = new ZlpFileInfo(s);
+                        yield return file.FullName;
+                    }
+                }
+                var names = sourcefolders.SelectMany(s => Recurses(s)).Select(ZlpPathHelper.GetFileNameFromFilePath).ToList();
+                var targetfiles = Recurses(target).Where(f => names.Contains(ZlpPathHelper.GetFileNameFromFilePath(f))).Select(f => new FileJob(new ZlpFileInfo(f), new ZlpFileInfo(f), CopyJobType.CompareNames, CheckCancel)).ToList();
+                return targetfiles;
+            }
+            throw new NotImplementedException();
         }
 
         private IEnumerable<FileJob> GetFiles(string f, string source, string target)

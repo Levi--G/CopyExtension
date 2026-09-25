@@ -41,6 +41,14 @@ namespace CopyExtension
             [Value(1, Required = true, HelpText = "The target directory, where files get deleted")]
             public string Destination { get; set; }
         }
+        [Verb("CompareNames", HelpText = "Compares files or folders and deletes identical names of files in the target directory")]
+        public class CompareNamesOptions
+        {
+            [Value(0, Required = true, HelpText = "The folders or files to compare, separated by |")]
+            public string Source { get; set; }
+            [Value(1, Required = true, HelpText = "The target directory, where files get deleted")]
+            public string Destination { get; set; }
+        }
         [Verb("Nuke", HelpText = "Nukes empty folders or files inside the target directories")]
         public class NukeOptions
         {
@@ -48,6 +56,12 @@ namespace CopyExtension
             public bool FileMode { get; set; }
             [Option('d', "directory", HelpText = "Enable deleting empty folders even in file mode")]
             public bool DirectoryMode { get; set; }
+            [Value(0, Required = true, HelpText = "The target directories, separated by |")]
+            public string Target { get; set; }
+        }
+        [Verb("Source", HelpText = "Detetes .vs, obj, bin, .pio folders from source directories")]
+        public class SourceOptions
+        {
             [Value(0, Required = true, HelpText = "The target directories, separated by |")]
             public string Target { get; set; }
         }
@@ -63,10 +77,11 @@ namespace CopyExtension
         }
         public static void Main(string[] args)
         {
-            var cli = Parser.Default.ParseArguments<CopyOptions, MoveOptions, CompareOptions, NukeOptions, CustomOptions>(args);
+            var cli = Parser.Default.ParseArguments<CopyOptions, MoveOptions, CompareOptions, CompareNamesOptions, NukeOptions, SourceOptions, CustomOptions>(args);
             cli.WithParsed<CopyOptions>(c => RunTask(new CopyMoveTask(c.Source.Split('|'), c.Destination, CopyJobType.Copy, null)));
             cli.WithParsed<MoveOptions>(c => RunTask(new CopyMoveTask(c.Source.Split('|'), c.Destination, CopyJobType.Move, null)));
             cli.WithParsed<CompareOptions>(c => RunTask(new CopyMoveTask(c.Source.Split('|'), c.Destination, CopyJobType.Compare, null)));
+            cli.WithParsed<CompareNamesOptions>(c => RunTask(new CopyMoveTask(c.Source.Split('|'), c.Destination, CopyJobType.CompareNames, null)));
             cli.WithParsed<NukeOptions>(c =>
             {
                 if (c.FileMode)
@@ -78,6 +93,7 @@ namespace CopyExtension
                     RunTask(new NukeTask(c.Target.Split('|'), true, null));
                 }
             });
+            cli.WithParsed<SourceOptions>(c => { RunTask(new SourceTask(c.Target.Split('|'), null)); });
             cli.WithParsed<CustomOptions>(c =>
             {
                 CopyExtension.Load();

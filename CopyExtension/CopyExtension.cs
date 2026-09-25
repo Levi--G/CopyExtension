@@ -88,6 +88,18 @@ namespace CopyExtension
                     item.DropDownItems.Add(comp);
                 }
 
+                if (Options.EnableCompareNames)
+                {
+                    var comp = new ToolStripMenuItem
+                    {
+                        Text = "Compare names here"
+                    };
+
+                    comp.Click += CompNames_Click;
+
+                    item.DropDownItems.Add(comp);
+                }
+
                 if (Options.EnableHardlink)
                 {
                     var copy = new ToolStripMenuItem
@@ -122,6 +134,18 @@ namespace CopyExtension
                 files.Click += Files_Click;
 
                 item.DropDownItems.Add(files);
+            }
+
+            if (Options.EnableCleanSource)
+            {
+                var source = new ToolStripMenuItem
+                {
+                    Text = "Clean Source"
+                };
+
+                source.Click += Source_Click;
+
+                item.DropDownItems.Add(source);
             }
 
             if (Options.CustomCommands != null)
@@ -201,6 +225,14 @@ namespace CopyExtension
             }
         }
 
+        private void CompNames_Click(object sender, EventArgs e)
+        {
+            if (DataOnClipboard && FolderExists)
+            {
+                MainForm.AddTask(new CopyMoveTask(ClipboardData, SingleFolderPath, CopyJobType.CompareNames, null));
+            }
+        }
+
         private void Hardlinks_Click(object sender, EventArgs e)
         {
             if (DataOnClipboard && FolderExists)
@@ -222,6 +254,14 @@ namespace CopyExtension
             if (FolderExists)
             {
                 MainForm.AddTask(new NukeTask(MultiFolderPaths, false, null));
+            }
+        }
+
+        private void Source_Click(object sender, EventArgs e)
+        {
+            if (FolderExists)
+            {
+                MainForm.AddTask(new SourceTask(MultiFolderPaths, null));
             }
         }
 

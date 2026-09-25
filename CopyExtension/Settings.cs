@@ -18,9 +18,11 @@ namespace CopyExtension
         public bool EnableCopy { get; set; } = true;
         public bool EnableMove { get; set; } = true;
         public bool EnableCompare { get; set; } = true;
+        public bool EnableCompareNames { get; set; } = true;
         public bool EnableHardlink { get; set; } = true;
         public bool EnableNukeFolder { get; set; } = true;
         public bool EnableNukeFile { get; set; } = true;
+        public bool EnableCleanSource { get; set; } = false;
         public int SmallFileLimit { get; set; } = 10;
         public long SmallFileSize { get; set; } = 5 * 1024 * 1024;
 
