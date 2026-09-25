@@ -1,10 +1,5 @@
 .vs/
 *.user
-CopyExtention/bin/
-CopyExtention/obj/
-CopyExtension/bin/
-CopyExtension/obj/
-SaveFileCreator/bin/
-SaveFileCreator/obj/
-CopyExtensionCLI/bin/
-CopyExtensionCLI/obj/
+bin/
+obj/
+.vscode/*

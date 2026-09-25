@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="CopyExtension/CopyExtension.csproj" />
+  <Project Path="CopyExtensionCLI/CopyExtensionCLI.csproj" />
+  <Project Path="FolderCompare/FolderCompare.csproj" />
+  <Project Path="SaveFileCreator/SaveFileCreator.csproj" />
+</Solution>
