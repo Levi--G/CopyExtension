@@ -1,6 +1,19 @@
 <Solution>
-  <Project Path="CopyExtension/CopyExtension.csproj" />
-  <Project Path="CopyExtensionCLI/CopyExtensionCLI.csproj" />
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="ARM" />
+    <Platform Name="ARM64" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="CopyExtension/CopyExtension.csproj">
+    <Platform Solution="Debug|x64" Project="x64" />
+    <Deploy Solution="Debug|Any CPU" />
+  </Project>
+  <Project Path="ExplorerCommandVerb/ExplorerCommandVerb.vcxproj" Id="6add939c-a7c3-4fb3-b08b-8b037854e98c">
+    <Platform Solution="*|ARM" Project="x64" />
+    <Platform Solution="*|ARM64" Project="x64" />
+  </Project>
   <Project Path="FolderCompare/FolderCompare.csproj" />
-  <Project Path="SaveFileCreator/SaveFileCreator.csproj" />
+  <Project Path="SaveFileCreator/SaveFileCreator.csproj" Id="fc16bddc-19c0-49c2-8312-b3f42d91a22e" />
 </Solution>

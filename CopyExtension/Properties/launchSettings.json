@@ -1,8 +1,26 @@
 {
   "profiles": {
     "CopyExtension": {
-      "commandName": "Project",
-      "commandLineArgs": "Custom \"Move shortcuts to Desktop\" from|from2"
+      "commandName": "MsixPackage",
+      "commandLineArgs": "copy -c -l false",
+      "alwaysReinstallApp": true,
+      "remoteDebugEnabled": false,
+      "allowLocalNetworkLoopbackProperty": true,
+      "authenticationMode": "Windows",
+      "doNotLaunchApp": false,
+      "remoteDebugMachine": "",
+      "nativeDebugging": false
+    },
+    "Debug": {
+      "commandName": "MsixPackage",
+      "commandLineArgs": "copy -c \"D:\"",
+      "alwaysReinstallApp": true,
+      "remoteDebugEnabled": false,
+      "allowLocalNetworkLoopbackProperty": true,
+      "authenticationMode": "Windows",
+      "doNotLaunchApp": false,
+      "remoteDebugMachine": "",
+      "nativeDebugging": false
     }
   }
 }

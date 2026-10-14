@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using CopyExtension;
+using CopyExtension.Helpers;
+using CopyExtension.Tasks;
 using System.Reflection;
-using System.Runtime.Remoting.Contexts;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Xml.Serialization;
-using ZetaLongPaths;
 
-namespace CopyExtension
+namespace CopyExtensionAOT
 {
     public class Settings
     {
@@ -25,6 +23,7 @@ namespace CopyExtension
         public bool EnableCleanSource { get; set; } = false;
         public int SmallFileLimit { get; set; } = 10;
         public long SmallFileSize { get; set; } = 5 * 1024 * 1024;
+        public bool EnableLogging { get; set; } = false;//TODO
 
         public CustomCommandSetting[] CustomCommands { get; set; } = new CustomCommandSetting[] {
             new CustomCommandSetting() {
@@ -44,38 +43,41 @@ namespace CopyExtension
         public static Settings Load()
         {
             var path = SavePath;
-            var ser = new XmlSerializer(typeof(Settings));
             if (!File.Exists(path))
             {
                 Save(new Settings());
             }
             using (var s = File.OpenRead(path))
             {
-                return (Settings)ser.Deserialize(s);
+                return JsonSerializer.Deserialize(s, SourceGenerationContext.Default.Settings) ?? new();
             }
         }
 
         public static void Save(Settings settings)
         {
             var path = SavePath;
-            var ser = new XmlSerializer(typeof(Settings));
             if (File.Exists(path))
             {
                 File.Delete(path);
             }
+            DirExt.CreateSafe(Path.GetDirectoryName(path));
             using (var s = File.OpenWrite(path))
             {
-                ser.Serialize(s, settings);
+                JsonSerializer.Serialize(s, settings, SourceGenerationContext.Default.Settings);
             }
         }
 
-        public static string SavePath => Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "settings.xml");
+        public static string SavePath => Path.Combine(Program.LocalAppDir, "settings.json");
     }
+
+    [JsonSourceGenerationOptions(WriteIndented = true)]
+    [JsonSerializable(typeof(Settings))]
+    internal partial class SourceGenerationContext : JsonSerializerContext { }
 
     public class CustomCommandSetting
     {
         public string Name { get; set; }
-        public CustomCommand[] Commands { get; set; } = new CustomCommand[] { };
+        public CustomCommand[] Commands { get; set; } = [];
 
         public CopyTask ToTask(string[] context, string[] clipboard)
         {
@@ -108,9 +110,9 @@ namespace CopyExtension
         public enum TargettingType
         { None = 0, Context = 1, Static = 2, SpecialFolder = 4, Environment = 8, Navigation = 16, Clipboard = 32, StaticRelativeToContext = 64, StaticRelativeToClipboard = 128 }
 
-        public string[] Source { get; set; }
-        public string[] Target { get; set; }
-        public Filter[] Filters { get; set; }
+        public string[]? Source { get; set; }
+        public string[]? Target { get; set; }
+        public Filter[]? Filters { get; set; }
 
         public bool ExpandSource { get; set; }
 
@@ -161,13 +163,13 @@ namespace CopyExtension
             {
                 s = s.SelectMany(ss =>
                 {
-                    if (ZlpIOHelper.FileExists(ss))
+                    if (File.Exists(ss))
                     {
                         return new[] { ss };
                     }
-                    if (ZlpIOHelper.DirectoryExists(ss))
+                    if (Directory.Exists(ss))
                     {
-                        return ZlpIOHelper.GetFileSystemInfos(ss).Select(f => f.FullName);
+                        return Directory.GetFileSystemEntries(ss);
                     }
                     return Array.Empty<string>();
                 }).ToArray();
@@ -180,7 +182,7 @@ namespace CopyExtension
             return GetTargetInternal(TargetType, Target, context, clipboard);
         }
 
-        private string[] GetTargetInternal(TargettingType Type, string[] text, string[] context, string[] clipboard)
+        private string[] GetTargetInternal(TargettingType Type, string[]? text, string[] context, string[] clipboard)
         {
             IEnumerable<string> source = Array.Empty<string>();
             if (Type.HasFlag(TargettingType.Static) && text?.Length > 0)
@@ -240,7 +242,7 @@ namespace CopyExtension
 
         private static string ReplaceEnvironment(string value)
         {
-            return Environment.GetEnvironmentVariable(value);
+            return Environment.GetEnvironmentVariable(value) ?? "";
         }
 
         private static string ReplaceNavigation(string value)
@@ -259,7 +261,7 @@ namespace CopyExtension
     public class Filter
     {
         public bool Allow { get; set; } = false;
-        public string Text { get; set; }
+        public string? Text { get; set; }
         public FilterType Type { get; set; }
 
         public enum FilterType
@@ -269,50 +271,54 @@ namespace CopyExtension
         public bool DirectoryContents { get; set; } = false;
         public bool MatchName { get; set; } = false;
 
-        public bool? Matches(IZlpFileSystemInfo path)
+        public bool? Matches(string path)
         {
-            Text = Text ?? string.Empty;
+            Text ??= string.Empty;
             if (DirectoryContents)
             {
-                ZlpDirectoryInfo dir = null;
-                if (path is ZlpDirectoryInfo d)
+                string? dir = null;
+                if (Directory.Exists(path))
                 {
-                    dir = d;
+                    dir = path;
                 }
-                if (path is ZlpFileInfo f)
+                if (File.Exists(path))
                 {
-                    dir = f.Directory;
+                    dir = Path.GetDirectoryName(path);
                 }
-                return dir.GetFileSystemInfos().Select(MatchInternal).FirstOrDefault(e => e != null);
+                if (dir == null)
+                {
+                    return false;
+                }
+                return Directory.GetFileSystemEntries(path).Select(MatchInternal).FirstOrDefault(e => e != null);
             }
             return MatchInternal(path);
         }
 
-        private bool? MatchInternal(IZlpFileSystemInfo path)
+        private bool? MatchInternal(string path)
         {
-            string toMatch = MatchName ? path.Name : path.FullName;
+            string toMatch = MatchName ? Path.GetFileName(path) : path;
             switch (Type)
             {
                 case FilterType.Match:
-                    return ((toMatch == Text) != InvertMatch) ? Allow : (bool?)null;
+                    return (toMatch == Text != InvertMatch) ? Allow : (bool?)null;
 
                 case FilterType.Contains:
-                    return ((toMatch.Contains(Text)) != InvertMatch) ? Allow : (bool?)null;
+                    return (toMatch.Contains(Text) != InvertMatch) ? Allow : (bool?)null;
 
                 case FilterType.WildCard:
-                    return ((MatchRegex(toMatch, WildCardToRegular(Text))) != InvertMatch) ? Allow : (bool?)null;
+                    return (MatchRegex(toMatch, WildCardToRegular(Text)) != InvertMatch) ? Allow : (bool?)null;
 
                 case FilterType.Regex:
-                    return ((MatchRegex(toMatch, Text)) != InvertMatch) ? Allow : (bool?)null;
+                    return (MatchRegex(toMatch, Text) != InvertMatch) ? Allow : (bool?)null;
 
                 case FilterType.StartsWith:
-                    return ((toMatch.StartsWith(Text)) != InvertMatch) ? Allow : (bool?)null;
+                    return (toMatch.StartsWith(Text) != InvertMatch) ? Allow : (bool?)null;
 
                 case FilterType.EndsWith:
-                    return ((toMatch.EndsWith(Text)) != InvertMatch) ? Allow : (bool?)null;
+                    return (toMatch.EndsWith(Text) != InvertMatch) ? Allow : (bool?)null;
 
                 case FilterType.IsFile:
-                    return ((path is ZlpFileInfo) != InvertMatch) ? Allow : (bool?)null;
+                    return (File.Exists(path) != InvertMatch) ? Allow : (bool?)null;
 
                 default:
                     return null;
