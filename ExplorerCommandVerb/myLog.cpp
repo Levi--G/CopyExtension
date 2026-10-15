@@ -1,35 +1,33 @@
-
-#include "myLog.h"
-#include <fstream>
-#include <codecvt>
-#include <locale>
-#include <Windows.h>
-
-std::wstring s2ws(const std::string& str)
-{
-	return std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(str);
-}
-
-std::string ws2s(const std::wstring& wstr)
-{
-	return std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(wstr);
-}
-
-void myLog(const std::string& text)
-{
-	std::ofstream logFile("D:\\log.txt", std::ios::app);
-	if (logFile)
-	{
-		logFile << text << '\n';
-	}
-}
-
-void myLog(const std::wstring& message)
-{
-	if (message.empty())
-	{
-		myLog("");
-		return;
-	}
-	myLog(ws2s(message));
-}
+//#include "dll.h"
+//#include "myLog.h"
+//#include <fstream>
+//#include <ShlObj.h>
+//
+//void myLog(const std::string& text)
+//{
+//	PWSTR path = NULL;
+//	if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &path))) {
+//		std::wstring filepath = path;
+//
+//		if (!filepath.empty() && filepath.back() != L'\\' && filepath.back() != L'/')
+//		{
+//			filepath += L'\\';
+//		}
+//		filepath += L"CopyExtension\\log.log";
+//		std::ofstream logFile(filepath, std::ios::app);
+//		if (logFile)
+//		{
+//			logFile << "[ExplorerCommandVerb] " << text << '\n';
+//		}
+//	}
+//}
+//
+//void myLog(const std::wstring& message)
+//{
+//	if (message.empty())
+//	{
+//		myLog("");
+//		return;
+//	}
+//	myLog(ws2s(message));
+//}

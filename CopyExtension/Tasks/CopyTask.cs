@@ -1,12 +1,4 @@
 ﻿using CopyExtension.UI;
-using CopyExtensionAOT;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace CopyExtension.Tasks;
 
@@ -17,8 +9,8 @@ public abstract class CopyTask
     public CopyTask? FollowUpTask { get; set; }
     public IOptionGui? OptionGui { get; set; }
 
-    public string ReadingVolume { get; protected set; }
-    public string WritingVolume { get; protected set; }
+    public string? ReadingVolume { get; protected set; }
+    public string? WritingVolume { get; protected set; }
     public virtual string FullAction => null;
     public string Action { get; protected set; }
     public string CurrentAction { get; protected set; }

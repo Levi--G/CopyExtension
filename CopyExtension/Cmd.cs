@@ -1,28 +1,20 @@
-﻿using Avalonia.Data;
-using Avalonia.Reactive;
-using CommandLine;
-using CopyExtension.Helpers;
+﻿using CopyExtension.Helpers;
 using CopyExtension.Tasks;
 using CopyExtension.UI;
-using CopyExtensionAOT;
-using System;
-using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace CopyExtension;
 
-internal class Cmd : ICmd
+internal class Cmd
 {
     static WindowMgr? windowMgr;
-    public void Execute(string[] args)
+
+    Command CreateCommand()
     {
-        //CopyExtension.Logger.Log(this, $"starting with cmd: {Environment.CommandLine}");
-        bool wait = false;
         Option<bool> clipOption = new("--clip", "-c")
         {
             Description = "Use clipboard data as source",
@@ -41,37 +33,13 @@ internal class Cmd : ICmd
         {
             Description = "(Debug) Opens the log file for error analysis",
             Recursive = true,
-            Arity = ArgumentArity.Zero,
-            Action = new DelegateCommandLineAction(pr =>
-            {
-                Program.Logger.Log("Opening log file");
-                if (File.Exists(Program.Logger.LogFile))
-                {
-                    Process.Start(new ProcessStartInfo(Program.Logger.LogFile) { UseShellExecute = true, CreateNewProcessGroup = true });
-                }
-                else
-                {
-                    Console.WriteLine("Logging is not enabled, enable logging in settings.");
-                }
-            })
+            Arity = ArgumentArity.Zero
         };
         Option<bool> optionsOption = new("--options", "-o")
         {
             Description = "(Debug) Opens the options file",
             Recursive = true,
-            Arity = ArgumentArity.Zero,
-            Action = new DelegateCommandLineAction(pr =>
-            {
-                Settings.Save(Program.Options);
-                if (File.Exists(Settings.SavePath))
-                {
-                    Process.Start(new ProcessStartInfo(Settings.SavePath) { UseShellExecute = true, CreateNewProcessGroup = true });
-                }
-                else
-                {
-                    Console.WriteLine("Settings file is not found?");
-                }
-            })
+            Arity = ArgumentArity.Zero
         };
         Option<bool> consoleOption = new("--console", "-n")
         {
@@ -83,11 +51,7 @@ internal class Cmd : ICmd
         {
             Description = "(Debug) Waits for input before exiting the console to give a chance to read the output, requires -n",
             Recursive = true,
-            Arity = ArgumentArity.Zero,
-            Action = new DelegateCommandLineAction(pr =>
-            {
-                wait = true;
-            }),
+            Arity = ArgumentArity.Zero
         };
         waitOption.Validators.Add(r => { if (r.GetValue(waitOption) == true && r.GetValue(consoleOption) != true) { r.AddError("-e (--waitforexit) needs -n (--console) to work"); } });
         Argument<string> destinationArgument = new("destination")
@@ -95,6 +59,11 @@ internal class Cmd : ICmd
             Arity = ArgumentArity.ExactlyOne
         };
         destinationArgument.AcceptLegalFilePathsOnly();
+        Argument<string?> nonreqdestinationArgument = new("destination")
+        {
+            Arity = ArgumentArity.ZeroOrOne
+        };
+        nonreqdestinationArgument.AcceptLegalFilePathsOnly();
 
 
         Option<ExistsAction?> existsOption = new("--exists", "-x")
@@ -126,6 +95,22 @@ internal class Cmd : ICmd
         {
             Description = "Detetes .vs, obj, bin, .pio folders from c# or pio projects",
             Arity = ArgumentArity.Zero
+        };
+        Option<string> nameOption = new("--name", "-a")
+        {
+            Description = "The name of the custom command to execute",
+            Arity = ArgumentArity.ExactlyOne
+        };
+        Option<int?> idOption = new("--id", "-i")
+        {
+            Description = "The explorerid of the custom command to execute",
+            Arity = ArgumentArity.ExactlyOne
+        };
+        Option<int> secondsOption = new("--seconds", "-i")
+        {
+            Description = "How many seconds to wait, defaults to 5",
+            Arity = ArgumentArity.ExactlyOne,
+            DefaultValueFactory = r => 5
         };
 
         //[Option('w', "windowsless")]
@@ -166,57 +151,76 @@ internal class Cmd : ICmd
         nukeCommand.Options.Add(dirsOption);
         nukeCommand.Options.Add(devOption);
         nukeCommand.Validators.Add(item => { if (!item.GetValue(filesOption) && !item.GetValue(dirsOption) && !item.GetValue(devOption)) { item.AddError("No operation provided. One of -f -d or -v needs to be supplied to the nuke command."); } });
+        Command waitCommand = new("wait", "Waits for a number of seconds while locking volumes");
+        waitCommand.Arguments.Add(nonreqdestinationArgument);
+        waitCommand.Options.Add(secondsOption);
+
+        Command customCommand = new("custom", "Execute custom actions");
+        customCommand.Arguments.Add(destinationArgument);
+        customCommand.Options.Add(existsOption);
+        customCommand.Options.Add(nameOption);
+        customCommand.Options.Add(idOption);
+        customCommand.Validators.Add(item => { if (string.IsNullOrEmpty(item.GetValue(nameOption)) && (item.GetValue(idOption) ?? 0) < 1) { item.AddError("No operation provided. One of -n or -i needs to be supplied to the custom command."); } });
+
         rootCommand.Subcommands.Add(copyCommand);
         rootCommand.Subcommands.Add(moveCommand);
         rootCommand.Subcommands.Add(compareCommand);
         rootCommand.Subcommands.Add(nukeCommand);
+        rootCommand.Subcommands.Add(waitCommand);
+        rootCommand.Subcommands.Add(customCommand);
+
+        void GetOptions(ParseResult parseResult, out bool clip, out string[]? source, out bool console, out bool log, out bool options)
+        {
+            clip = parseResult.GetValue(clipOption);
+            source = parseResult.GetValue(sourceOption);
+            console = parseResult.GetValue(consoleOption);
+            log = parseResult.GetValue(logOption);
+            options = parseResult.GetValue(optionsOption);
+        }
 
         copyCommand.SetAction(parseResult =>
         {
-            var clip = parseResult.GetValue(clipOption);
-            var source = parseResult.GetValue(sourceOption);
+            GetOptions(parseResult, out var clip, out var source, out var console, out var log, out var options);
+            DoExtraPre(parseResult, log, options);
             var destination = parseResult.GetValue(destinationArgument) ?? throw new ArgumentException("destination is mandatory");
-            var console = parseResult.GetValue(consoleOption);
             var exists = parseResult.GetValue(existsOption);
             var unsafeo = parseResult.GetValue(unsafeOption);
             windowMgr ??= new(console);
             windowMgr.Start();
             windowMgr.AddTask(new CopyMoveTask(GetSource(windowMgr, source, clip), destination, unsafeo ? CopyJobType.CopyUnsafe : CopyJobType.Copy, null) { DefaultExistsAction = exists });
-            windowMgr.AllowQuit();
+            DoExtraPost(parseResult, parseResult.GetValue(waitOption));
+
         });
 
         moveCommand.SetAction(parseResult =>
         {
-            var clip = parseResult.GetValue(clipOption);
-            var source = parseResult.GetValue(sourceOption);
+            GetOptions(parseResult, out var clip, out var source, out var console, out var log, out var options);
+            DoExtraPre(parseResult, log, options);
             var destination = parseResult.GetValue(destinationArgument) ?? throw new ArgumentException("destination is mandatory");
-            var console = parseResult.GetValue(consoleOption);
             var exists = parseResult.GetValue(existsOption);
             var unsafeo = parseResult.GetValue(unsafeOption);
             windowMgr ??= new(console);
             windowMgr.Start();
             windowMgr.AddTask(new CopyMoveTask(GetSource(windowMgr, source, clip), destination, unsafeo ? CopyJobType.MoveUnsafe : CopyJobType.Move, null) { DefaultExistsAction = exists });
-            windowMgr.AllowQuit();
+            DoExtraPost(parseResult, parseResult.GetValue(waitOption));
         });
 
         compareCommand.SetAction(parseResult =>
         {
-            var clip = parseResult.GetValue(clipOption);
-            var source = parseResult.GetValue(sourceOption);
+            GetOptions(parseResult, out var clip, out var source, out var console, out var log, out var options);
+            DoExtraPre(parseResult, log, options);
             var destination = parseResult.GetValue(destinationArgument) ?? throw new ArgumentException("destination is mandatory");
-            var console = parseResult.GetValue(consoleOption);
             var names = parseResult.GetValue(namesOption);
             windowMgr ??= new(console);
             windowMgr.Start();
             windowMgr.AddTask(new CopyMoveTask(GetSource(windowMgr, source, clip), destination, names ? CopyJobType.CompareNames : CopyJobType.Compare, null));
-            windowMgr.AllowQuit();
+            DoExtraPost(parseResult, parseResult.GetValue(waitOption));
         });
 
         nukeCommand.SetAction(parseResult =>
         {
-            var clip = parseResult.GetValue(clipOption);
-            var source = parseResult.GetValue(sourceOption);
-            var console = parseResult.GetValue(consoleOption);
+            GetOptions(parseResult, out var clip, out var source, out var console, out var log, out var options);
+            DoExtraPre(parseResult, log, options);
             windowMgr ??= new(console);
             windowMgr.Start();
             if (parseResult.GetValue(devOption))
@@ -231,23 +235,109 @@ internal class Cmd : ICmd
             {
                 windowMgr.AddTask(new NukeTask(GetSource(windowMgr, source, clip), true, null));
             }
-            windowMgr.AllowQuit();
+            DoExtraPost(parseResult, parseResult.GetValue(waitOption));
         });
 
-        //hardlink
+        waitCommand.SetAction(parseResult =>
+        {
+            GetOptions(parseResult, out var clip, out var source, out var console, out var log, out var options);
+            DoExtraPre(parseResult, log, options);
+            var seconds = parseResult.GetValue(secondsOption);
+            var destination = parseResult.GetValue(nonreqdestinationArgument);
+            windowMgr ??= new(console);
+            windowMgr.Start();
+            var fullsource = GetSource(windowMgr, source, clip);
+            var rvol = fullsource.Length > 0 ? PathExt.GetVolume(fullsource.First()) : null;
+            var wvol = destination != null ? PathExt.GetVolume(fullsource.First()) : null;
+            windowMgr.AddTask(new WaitTask(seconds, rvol, wvol, null));
+            DoExtraPost(parseResult, parseResult.GetValue(waitOption));
+        });
 
-        //custom
+        customCommand.SetAction(parseResult =>
+        {
+            GetOptions(parseResult, out var clip, out var source, out var console, out var log, out var options);
+            DoExtraPre(parseResult, log, options);
+            var destination = parseResult.GetValue(destinationArgument) ?? throw new ArgumentException("destination is mandatory");
+            var exists = parseResult.GetValue(existsOption);
+            var name = parseResult.GetValue(nameOption);
+            var id = parseResult.GetValue(idOption);
+            CustomCommandSetting? command = null;
+            if (!string.IsNullOrEmpty(name))
+            {
+                command = Program.Options.CustomCommands.FirstOrDefault(c => c.Name == name);
+            }
+            if ((id ?? 0) > 0)
+            {
+                command ??= Program.Options.CustomCommands.FirstOrDefault(c => c.ExplorerId == id);
+            }
+            if (command == null) { throw new Exception("-n or -i must be supplied"); }
+            windowMgr ??= new(console);
+            windowMgr.Start();
+            var t = command.ToTask(GetSource(windowMgr, [destination], false), GetSource(windowMgr, source, true), exists);
+            if (t != null)
+            {
+                windowMgr.AddTask(t);
+            }
+            DoExtraPost(parseResult, parseResult.GetValue(waitOption));
+        });
 
-        rootCommand.Parse(args).Invoke();
+        //Todo: hardlink
 
+        return rootCommand;
+    }
+
+    void DoExtraPre(ParseResult result, bool log, bool options)
+    {
+        if (log)
+        {
+            Program.Logger.Log("Opening log file");
+            if (File.Exists(Program.Logger.LogFile))
+            {
+                Process.Start(new ProcessStartInfo(Program.Logger.LogFile) { UseShellExecute = true, CreateNewProcessGroup = true });
+            }
+            else
+            {
+                Console.WriteLine("Logging is not enabled, enable logging in settings.");
+            }
+        }
+        if (options)
+        {
+            Settings.Save(Program.Options);
+            if (File.Exists(Settings.SavePath))
+            {
+                Process.Start(new ProcessStartInfo(Settings.SavePath) { UseShellExecute = true, CreateNewProcessGroup = true });
+            }
+            else
+            {
+                Console.WriteLine("Settings file is not found?");
+            }
+        }
+    }
+
+    void DoExtraPost(ParseResult result, bool wait)
+    {
         windowMgr?.WaitForExit();
-
         if (wait)
         {
             Console.WriteLine("Press Enter to continue...");
             Console.ReadLine();
         }
         windowMgr?.Finish();
+    }
+
+    public ParseResult Parse(string commandline)
+    {
+        return CreateCommand().Parse(commandline);
+    }
+
+    public ParseResult Parse(string[] args)
+    {
+        return CreateCommand().Parse(args);
+    }
+
+    public void Execute(ParseResult result)
+    {
+        result.Invoke();
     }
 
     static string[] GetSource(WindowMgr windowMgr, string[]? source, bool clipboard)
@@ -263,22 +353,96 @@ internal class Cmd : ICmd
         }
         return source?.SelectMany(s => s.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)).ToArray() ?? [];
     }
-}
 
-sealed class DelegateCommandLineAction : SynchronousCommandLineAction
-{
-    private readonly Action<ParseResult> _callback;
-
-    public DelegateCommandLineAction(Action<ParseResult> callback)
+    public static string GetCommandline(string[] args)
     {
-        _callback = callback;
+        var stringBuilder = new StringBuilder();
+
+        foreach (string argument in args)
+        {
+            AppendArgument(stringBuilder, argument);
+        }
+
+        return stringBuilder.ToString();
     }
 
-    public override bool Terminating => false;
-
-    public override int Invoke(ParseResult parseResult)
+    public static string[] SplitCommandline(string args)
     {
-        _callback(parseResult);
-        return 0;
+        return CommandLineParser.SplitCommandLine(args).ToArray();
+    }
+
+    private const char Quote = '\"';
+    private const char Backslash = '\\';
+    public static void AppendArgument(StringBuilder stringBuilder, string argument)
+    {
+        if (stringBuilder.Length != 0)
+        {
+            stringBuilder.Append(' ');
+        }
+
+        if (argument.Length != 0 && ContainsNoWhitespaceOrQuotes(argument))
+        {
+            stringBuilder.Append(argument);
+        }
+        else
+        {
+            stringBuilder.Append(Quote);
+            int idx = 0;
+            while (idx < argument.Length)
+            {
+                char c = argument[idx++];
+                if (c == Backslash)
+                {
+                    int numBackSlash = 1;
+                    while (idx < argument.Length && argument[idx] == Backslash)
+                    {
+                        idx++;
+                        numBackSlash++;
+                    }
+
+                    if (idx == argument.Length)
+                    {
+                        stringBuilder.Append(Backslash, numBackSlash * 2);
+                    }
+                    else if (argument[idx] == Quote)
+                    {
+                        stringBuilder.Append(Backslash, numBackSlash * 2 + 1);
+                        stringBuilder.Append(Quote);
+                        idx++;
+                    }
+                    else
+                    {
+                        stringBuilder.Append(Backslash, numBackSlash);
+                    }
+
+                    continue;
+                }
+
+                if (c == Quote)
+                {
+                    stringBuilder.Append(Backslash);
+                    stringBuilder.Append(Quote);
+                    continue;
+                }
+
+                stringBuilder.Append(c);
+            }
+
+            stringBuilder.Append(Quote);
+        }
+    }
+
+    private static bool ContainsNoWhitespaceOrQuotes(string s)
+    {
+        for (int i = 0; i < s.Length; i++)
+        {
+            char c = s[i];
+            if (char.IsWhiteSpace(c) || c == Quote)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

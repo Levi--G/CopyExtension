@@ -1,9 +1,9 @@
-﻿using Avalonia.Controls;
-using Avalonia.Threading;
-using Avalonia;
+﻿using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Layout;
-using CopyExtension.Tasks;
+using Avalonia.Threading;
 using CopyExtension.Helpers;
+using CopyExtension.Tasks;
 
 namespace CopyExtension.UI;
 

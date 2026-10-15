@@ -13,7 +13,7 @@
     },
     "Debug": {
       "commandName": "MsixPackage",
-      "commandLineArgs": "copy -c \"D:\"",
+      "commandLineArgs": "wait -i 200",
       "alwaysReinstallApp": true,
       "remoteDebugEnabled": false,
       "allowLocalNetworkLoopbackProperty": true,

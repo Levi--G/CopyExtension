@@ -3,6 +3,7 @@
 #include "Dll.h"
 #include "ShellHelpers.h"
 #include "Clipboard.h"
+#include "CommandTypes.h"
 
 class InvokeCSCommandVerb : public IExplorerCommand
 {
@@ -52,16 +53,7 @@ public:
 	// compute the visibility of the verb here, respect "fOkToBeSlow" if this is slow (does IO for example)
 	// when called with fOkToBeSlow == FALSE return E_PENDING and this object will be called
 	// back on a background thread with fOkToBeSlow == TRUE 
-	virtual IFACEMETHODIMP GetState(IShellItemArray* /*psia*/, BOOL /*fOkToBeSlow*/, EXPCMDSTATE* pCmdState) override
-	{
-		if (DoesClipboardHaveData()) {
-			*pCmdState = ECS_ENABLED;
-		}
-		else {
-			*pCmdState = ECS_HIDDEN;
-		}
-		return S_OK;
-	}
+	virtual IFACEMETHODIMP GetState(IShellItemArray* /*psia*/, BOOL /*fOkToBeSlow*/, EXPCMDSTATE* pCmdState) = 0;
 
 	IFACEMETHODIMP Invoke(IShellItemArray* psia, IBindCtx* /*pbc*/) override;
 
@@ -82,12 +74,9 @@ protected:
 	{
 		DllRelease();
 	}
-
 	virtual CommandType GetVerbType() = 0;
-
 private:
-	static DWORD __stdcall s_ThreadProc(void* pv);
-
+	void StartProcess(std::wstring& target);
 	long _cRef;
 };
 

@@ -1,5 +1,5 @@
 ﻿using CopyExtension.Helpers;
-using CopyExtensionAOT;
+using System.CommandLine.Parsing;
 
 namespace CopyExtension;
 
@@ -13,6 +13,7 @@ static class Program
 
     public static void Main(string[] args)
     {
-        new Cmd().Execute(args);
+        Logger.Log("Program", $"Starting with cmd: {Environment.CommandLine}");
+        new SingleInstance().Execute(args);
     }
 }

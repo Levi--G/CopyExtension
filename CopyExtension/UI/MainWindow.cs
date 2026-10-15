@@ -1,21 +1,16 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input.Platform;
+using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Themes.Fluent;
 using Avalonia.Threading;
-using System.Collections.Concurrent;
-using System.Data;
-using System.Diagnostics.CodeAnalysis;
-
-namespace CopyExtension.UI;
-
-using Avalonia.Layout;
-using CopyExtension;
 using CopyExtension.Helpers;
 using CopyExtension.Tasks;
-using CopyExtensionAOT;
 using MsBox.Avalonia.ViewModels.Commands;
+using System.Data;
+
+namespace CopyExtension.UI;
 
 class MainWindow : Window, ICopyWindow
 {
@@ -177,10 +172,7 @@ class MainWindow : Window, ICopyWindow
 
     private static void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
-        // Log the exception
         Program.Logger.Log("Dispatcher", "Unhandled UI thread exception: " + e.Exception.Message);
-
-        // Optionally prevent the application from crashing
         e.Handled = true;
     }
 

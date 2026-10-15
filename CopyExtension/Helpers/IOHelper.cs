@@ -1,59 +1,56 @@
-﻿using System;
+﻿namespace CopyExtension.Helpers;
 
-namespace CopyExtension.Helpers
+internal static class IOHelper
 {
-    internal static class IOHelper
+    public static string CheckAddLongPathPrefix(string path)
     {
-        public static string CheckAddLongPathPrefix(string path)
+        if (string.IsNullOrEmpty(path) || path.StartsWith(@"\\?\"))
         {
-            if (string.IsNullOrEmpty(path) || path.StartsWith(@"\\?\"))
-            {
-                return path;
-            }
-            else if (path.Length > 247 || path.Contains(@"~"))
-            {
-                return ForceAddLongPathPrefix(path);
-            }
-            else
-            {
-                return path;
-            }
+            return path;
         }
-
-        public static string ForceRemoveLongPathPrefix(string path)
+        else if (path.Length > 247 || path.Contains(@"~"))
         {
-            if (string.IsNullOrEmpty(path) || !path.StartsWith(@"\\?\"))
-            {
-                return path;
-            }
-            else if (path.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase))
-            {
-                return @"\\" + path.Substring(@"\\?\UNC\".Length);
-            }
-            else
-            {
-                return path.Substring(@"\\?\".Length);
-            }
+            return ForceAddLongPathPrefix(path);
         }
-
-        public static string ForceAddLongPathPrefix(string path)
+        else
         {
-            if (string.IsNullOrEmpty(path) || path.StartsWith(@"\\?\"))
+            return path;
+        }
+    }
+
+    public static string ForceRemoveLongPathPrefix(string path)
+    {
+        if (string.IsNullOrEmpty(path) || !path.StartsWith(@"\\?\"))
+        {
+            return path;
+        }
+        else if (path.StartsWith(@"\\?\UNC\", StringComparison.OrdinalIgnoreCase))
+        {
+            return @"\\" + path.Substring(@"\\?\UNC\".Length);
+        }
+        else
+        {
+            return path.Substring(@"\\?\".Length);
+        }
+    }
+
+    public static string ForceAddLongPathPrefix(string path)
+    {
+        if (string.IsNullOrEmpty(path) || path.StartsWith(@"\\?\"))
+        {
+            return path;
+        }
+        else
+        {
+            // http://msdn.microsoft.com/en-us/library/aa365247.aspx
+            if (path.StartsWith(@"\\"))
             {
-                return path;
+                // UNC.
+                return @"\\?\UNC\" + path.Substring(2);
             }
             else
             {
-                // http://msdn.microsoft.com/en-us/library/aa365247.aspx
-                if (path.StartsWith(@"\\"))
-                {
-                    // UNC.
-                    return @"\\?\UNC\" + path.Substring(2);
-                }
-                else
-                {
-                    return @"\\?\" + path;
-                }
+                return @"\\?\" + path;
             }
         }
     }

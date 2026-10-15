@@ -43,7 +43,6 @@ public class OptionControl : UserControl
 
     private void Btn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        //MessageBox.Show(details);
         MsBox.Avalonia.MessageBoxManager.GetMessageBoxStandard("Details", details).ShowWindowAsync();
     }
 

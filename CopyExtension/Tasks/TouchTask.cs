@@ -1,5 +1,4 @@
 ﻿using CopyExtension.Helpers;
-using CopyExtensionAOT;
 
 namespace CopyExtension.Tasks;
 

@@ -9,13 +9,15 @@
 #define STRICT_TYPED_ITEMIDS
 #define UNICODE 1
 #include <windows.h>
+#include <string>
 #include "settings.h"
-#include "CsApi.h"
 
 void DllAddRef();
 void DllRelease();
 
 Settings& GetSettings();
-CsApi& GetCsApi();
 
 extern HINSTANCE g_hInst;
+
+std::wstring s2ws(const std::string& str);
+std::string ws2s(const std::wstring& wstr);

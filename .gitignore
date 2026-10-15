@@ -4,3 +4,5 @@ bin/
 obj/
 .vscode/*
 Debug/
+CopyExtension/AppPackages/*
+CopyExtension/BundleArtifacts/*

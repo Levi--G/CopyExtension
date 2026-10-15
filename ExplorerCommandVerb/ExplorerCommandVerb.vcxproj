@@ -156,7 +156,7 @@
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy $(OutputPath)$(MSBuildProjectName).dll $(SolutionDir)CopyExtensionAOT\ /y</Command>
+      <Command>xcopy $(OutputPath)$(MSBuildProjectName).dll $(SolutionDir)CopyExtension\ /y</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -185,8 +185,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Clipboard.cpp" />
+    <ClCompile Include="CommandTypes.cpp" />
     <ClCompile Include="CommandVerbs.cpp" />
-    <ClCompile Include="CsApi.cpp" />
     <ClCompile Include="dll.cpp" />
     <ClCompile Include="InvokeCSCommandVerb.cpp" />
     <ClCompile Include="myLog.cpp" />
@@ -194,9 +194,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Clipboard.h" />
+    <ClInclude Include="CommandTypes.h" />
     <ClInclude Include="InvokeCSCommandVerb.h" />
     <ClInclude Include="CommandVerbs.h" />
-    <ClInclude Include="CsApi.h" />
     <ClInclude Include="Dll.h" />
     <ClInclude Include="myLog.h" />
     <ClInclude Include="settings.h" />

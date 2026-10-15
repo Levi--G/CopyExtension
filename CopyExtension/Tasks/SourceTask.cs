@@ -1,109 +1,102 @@
 ﻿using CopyExtension.Helpers;
-using CopyExtensionAOT;
-using System;
-using System.Collections.Generic;
-//using System.IO;
-using System.Linq;
-using System.Threading;
 
-namespace CopyExtension.Tasks
+namespace CopyExtension.Tasks;
+
+public class SourceTask : CopyTask
 {
-    public class SourceTask : CopyTask
+    public override string FullAction => $"{Action} on {WritingVolume}";
+
+    public override long SpeedSmoothingTolerance => 4;
+    public override string CurrentSpeedUnit => "items";
+
+    private string[] target;
+    public SourceTask(IEnumerable<string> target, Filter[]? filters) : base(filters)
     {
-        public override string FullAction => $"{Action} on {WritingVolume}";
+        this.target = target.Select(f => f.TrimEnd('\\')).Where(t => Directory.Exists(t)).ToArray();
+        this.WritingVolume = PathExt.GetVolume(this.target.First());
+        this.Action = "Cleaning source";
+    }
 
-        public override long SpeedSmoothingTolerance => 4;
-        public override string CurrentSpeedUnit => "items";
+    public override void Start()
+    {
+        new Thread(DoWork).Start();
+        base.Start();
+    }
 
-        private string[] target;
-        public SourceTask(IEnumerable<string> target, Filter[]? filters) : base(filters)
+    private void DoWork()
+    {
+        try
         {
-            this.target = target.Select(f => f.TrimEnd('\\')).Where(t => Directory.Exists(t)).ToArray();
-            this.WritingVolume = PathExt.GetVolume(this.target.First());
-            this.Action = "Cleaning source";
-        }
-
-        public override void Start()
-        {
-            new Thread(DoWork).Start();
-            base.Start();
-        }
-
-        private void DoWork()
-        {
-            try
+            CurrentAction = "Discovery";
+            DoStatus(true);
+            var todelete = new List<string>();
+            foreach (var dir in target)
             {
-                CurrentAction = "Discovery";
-                DoStatus(true);
-                var todelete = new List<string>();
-                foreach (var dir in target)
+                FindToDeleteRecursive(dir, todelete);
+                if (todelete.Contains(dir))
                 {
-                    FindToDeleteRecursive(dir, todelete);
-                    if (todelete.Contains(dir))
-                    {
-                        todelete.Remove(dir);
-                    }
+                    todelete.Remove(dir);
                 }
-                todelete.RemoveAll(i => !MatchesFilters(i));
+            }
+            todelete.RemoveAll(i => !MatchesFilters(i));
+            if (CheckCancel()) { return; }
+            CurrentAction = "Deleting";
+            this.TotalItems = todelete.Count;
+            this.TotalProgress = TotalItems;
+            DoStatus(true);
+            foreach (var item in todelete)
+            {
                 if (CheckCancel()) { return; }
-                CurrentAction = "Deleting";
-                this.TotalItems = todelete.Count;
-                this.TotalProgress = TotalItems;
-                DoStatus(true);
-                foreach (var item in todelete)
+                try
                 {
-                    if (CheckCancel()) { return; }
-                    try
-                    {
-                        CurrentName = item;
-                        DoStatus(false);
-                        DirExt.DeleteSafe(item);
-                    }
-                    catch
-                    {
-
-                    }
-                    CurrentItems++;
-                    CurrentProgress = CurrentItems;
+                    CurrentName = item;
+                    DoStatus(false);
+                    DirExt.DeleteSafe(item);
                 }
-                IsSuccess = true;
+                catch
+                {
+
+                }
+                CurrentItems++;
+                CurrentProgress = CurrentItems;
             }
-            catch (Exception e)
-            {
-                CurrentAction = "Errored";
-                CurrentName = $"{e.GetType().Name}: {e.Message}";
-                DoStatus(true);
-                Thread.Sleep(5000);
-                IsPaused = true;
-                CheckCancel();
-            }
-            finally
-            {
-                DoComplete();
-            }
+            IsSuccess = true;
         }
-
-        readonly string[] csexts = { ".cs", ".csproj", ".sln" };
-        private void FindToDeleteRecursive(string Dir, List<string> todelete)
+        catch (Exception e)
         {
-            if (IsCancelled) { return; }
-            bool iscs = Directory.EnumerateFiles(Dir).Any(f => csexts.Contains(Path.GetExtension(f).ToLower()));
-            bool ispio = Directory.EnumerateFiles(Dir).Any(f => Path.GetFileName(f).ToLower() == "platformio.ini");
-            foreach (var subdir in Directory.EnumerateDirectories(Dir))
+            CurrentAction = "Errored";
+            CurrentName = $"{e.GetType().Name}: {e.Message}";
+            DoStatus(true);
+            Thread.Sleep(5000);
+            IsPaused = true;
+            CheckCancel();
+        }
+        finally
+        {
+            DoComplete();
+        }
+    }
+
+    readonly string[] csexts = { ".cs", ".csproj", ".sln" };
+    private void FindToDeleteRecursive(string Dir, List<string> todelete)
+    {
+        if (IsCancelled) { return; }
+        bool iscs = Directory.EnumerateFiles(Dir).Any(f => csexts.Contains(Path.GetExtension(f).ToLower()));
+        bool ispio = Directory.EnumerateFiles(Dir).Any(f => Path.GetFileName(f).ToLower() == "platformio.ini");
+        foreach (var subdir in Directory.EnumerateDirectories(Dir))
+        {
+            string name = Path.GetFileName(subdir).ToLower();
+            if (iscs && (name == "bin" || name == "obj" || name == ".vs"))
             {
-                string name = Path.GetFileName(subdir).ToLower();
-                if (iscs && (name == "bin" || name == "obj" || name == ".vs"))
-                {
-                    todelete.Add(subdir);
-                    continue;
-                }
-                if (ispio && name == ".pio")
-                {
-                    todelete.Add(subdir);
-                    continue;
-                }
-                FindToDeleteRecursive(subdir, todelete);
+                todelete.Add(subdir);
+                continue;
             }
+            if (ispio && name == ".pio")
+            {
+                todelete.Add(subdir);
+                continue;
+            }
+            FindToDeleteRecursive(subdir, todelete);
         }
     }
 }

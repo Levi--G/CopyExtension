@@ -89,10 +89,16 @@
               <desktop5:Verb Id="CU4" Clsid="E4F42BCD-C1A7-11F1-A431-FC9D053267A4" />
               <desktop5:Verb Id="CU5" Clsid="E4F42BCE-C1A7-11F1-A431-FC9D053267A4" />
             </desktop5:ItemType>
-            <!--<desktop5:ItemType Type="Directory">
-              <desktop5:Verb Id="Copy" Clsid="E4F42BBA-C1A7-11F1-A431-FC9D053267A4" />
-              <desktop5:Verb Id="Move" Clsid="E4F42BBB-C1A7-11F1-A431-FC9D053267A4" />
-            </desktop5:ItemType>-->
+            <desktop5:ItemType Type="Directory">
+              <desktop5:Verb Id="CE5" Clsid="E4F42BC1-C1A7-11F1-A431-FC9D053267A4" />              <!--CleanSourceCommandVerb-->
+              <desktop5:Verb Id="CE6" Clsid="E4F42BC0-C1A7-11F1-A431-FC9D053267A4" />              <!--NukeFoldersCommandVerb-->
+              <desktop5:Verb Id="CE7" Clsid="E4F42BBF-C1A7-11F1-A431-FC9D053267A4" />              <!--NukeFilesCommandVerb-->
+              <desktop5:Verb Id="CU1" Clsid="E4F42BCA-C1A7-11F1-A431-FC9D053267A4" />
+              <desktop5:Verb Id="CU2" Clsid="E4F42BCB-C1A7-11F1-A431-FC9D053267A4" />
+              <desktop5:Verb Id="CU3" Clsid="E4F42BCC-C1A7-11F1-A431-FC9D053267A4" />
+              <desktop5:Verb Id="CU4" Clsid="E4F42BCD-C1A7-11F1-A431-FC9D053267A4" />
+              <desktop5:Verb Id="CU5" Clsid="E4F42BCE-C1A7-11F1-A431-FC9D053267A4" />
+            </desktop5:ItemType>
           </desktop4:FileExplorerContextMenus>
         </desktop4:Extension>
         <!--<uap:Extension Category="windows.protocol">

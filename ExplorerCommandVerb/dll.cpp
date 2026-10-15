@@ -8,6 +8,8 @@
 #include "dll.h"
 #include "CommandVerbs.h"
 #include <new>
+#include <codecvt>
+#include <locale>
 
 typedef HRESULT(*PFNCREATEINSTANCE)(REFIID riid, void** ppvObject);
 struct CLASS_OBJECT_INIT
@@ -41,6 +43,11 @@ const CLASS_OBJECT_INIT c_rgClassObjectInit[] =
 	{ &__uuidof(NukeFilesCommandVerb),	(PFNCREATEINSTANCE)(Verb_CreateInstance<NukeFilesCommandVerb>) },
 	{ &__uuidof(NukeFoldersCommandVerb),	(PFNCREATEINSTANCE)(Verb_CreateInstance<NukeFoldersCommandVerb>) },
 	{ &__uuidof(CleanSourceCommandVerb),	(PFNCREATEINSTANCE)(Verb_CreateInstance<CleanSourceCommandVerb>) },
+	{ &__uuidof(Custom1CommandVerb),	(PFNCREATEINSTANCE)(Verb_CreateInstance<Custom1CommandVerb>) },
+	{ &__uuidof(Custom2CommandVerb),	(PFNCREATEINSTANCE)(Verb_CreateInstance<Custom2CommandVerb>) },
+	{ &__uuidof(Custom3CommandVerb),	(PFNCREATEINSTANCE)(Verb_CreateInstance<Custom3CommandVerb>) },
+	{ &__uuidof(Custom4CommandVerb),	(PFNCREATEINSTANCE)(Verb_CreateInstance<Custom4CommandVerb>) },
+	{ &__uuidof(Custom5CommandVerb),	(PFNCREATEINSTANCE)(Verb_CreateInstance<Custom5CommandVerb>) },
 };
 
 
@@ -172,7 +179,12 @@ Settings& GetSettings() {
 	return settings;
 }
 
-CsApi& GetCsApi() {
-	static CsApi csApi;
-	return csApi;
+std::wstring s2ws(const std::string& str)
+{
+	return std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(str);
+}
+
+std::string ws2s(const std::wstring& wstr)
+{
+	return std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(wstr);
 }

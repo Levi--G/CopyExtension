@@ -1,7 +1,13 @@
-#include "settings.h"
+#include "dll.h"
 #include <fstream>
 #include <ShlObj.h>
 #include <string>
+#include "myLog.h"
+
+Settings::Settings()
+{
+	Load();
+}
 
 inline void Settings::Load() {
 	if (Loaded) {
@@ -32,6 +38,11 @@ inline void Settings::Load() {
 				cfgfilew << "EnableNukeFolder=false\n";
 				cfgfilew << "EnableNukeFile=false\n";
 				cfgfilew << "EnableCleanSource=false\n";
+				cfgfilew << "#CustomName1=SomeName here\n";
+				cfgfilew << "#CustomName2=SomeName here\n";
+				cfgfilew << "#CustomName3=SomeName here\n";
+				cfgfilew << "#CustomName4=SomeName here\n";
+				cfgfilew << "#CustomName5=SomeName here\n";
 			}
 			cfgfilew.close();
 		}
@@ -57,30 +68,36 @@ inline void Settings::parse(std::istream& cfgfile)
 		std::string id = line.substr(0, eq);
 		std::string val = line.substr(eq + 1);
 
-		if (val == "true") {
-			if (id == "EnableCompareNames") {
-				EnableCompareNames = true;
-			}
-			else if (id == "EnableHardlink") {
-				EnableHardlink = true;
-			}
-			else if (id == "EnableNukeFolder") {
-				EnableNukeFolder = true;
-			}
-			else if (id == "EnableNukeFile") {
-				EnableNukeFile = true;
-			}
-			else if (id == "EnableCleanSource") {
-				EnableCleanSource = true;
-			}
+		if (id == "EnableCompareNames") {
+			if (val == "true") { EnableCompareNames = true; }
 		}
-
-		//options[id] = val;
+		else if (id == "EnableHardlink") {
+			if (val == "true") { EnableHardlink = true; }
+		}
+		else if (id == "EnableNukeFolder") {
+			if (val == "true") { EnableNukeFolder = true; }
+		}
+		else if (id == "EnableNukeFile") {
+			if (val == "true") { EnableNukeFile = true; }
+		}
+		else if (id == "EnableCleanSource") {
+			if (val == "true") { EnableCleanSource = true; }
+		}
+		else if (id == "CustomName1") {
+			if (val != "") { CustomName1 = s2ws(val); Custom1Enabled = true; }
+		}
+		else if (id == "CustomName2") {
+			if (val != "") { CustomName2 = s2ws(val); Custom2Enabled = true; }
+		}
+		else if (id == "CustomName3") {
+			if (val != "") { CustomName3 = s2ws(val); Custom3Enabled = true; }
+		}
+		else if (id == "CustomName4") {
+			if (val != "") { CustomName4 = s2ws(val); Custom4Enabled = true; }
+		}
+		else if (id == "CustomName5") {
+			if (val != "") { CustomName5 = s2ws(val); Custom5Enabled = true; }
+		}
 	}
 	Loaded = true;
-	//options["EnableCompareNames"] == "true" ? EnableCompareNames = true : EnableCompareNames = false;
-	//options["EnableHardlink"] == "true" ? EnableHardlink = true : EnableHardlink = false;
-	//options["EnableNukeFolder"] == "true" ? EnableNukeFolder = true : EnableNukeFolder = false;
-	//options["EnableNukeFile"] == "true" ? EnableNukeFile = true : EnableNukeFile = false;
-	//options["EnableCleanSource"] == "true" ? EnableCleanSource = true : EnableCleanSource = false;
 }
