@@ -1,4 +1,5 @@
 ﻿namespace CopyExtension.Helpers;
+
 public class Logger : ILogger
 {
     public const string LogFileName = "log.log";

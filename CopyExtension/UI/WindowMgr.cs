@@ -84,7 +84,7 @@ internal class WindowMgr(bool console)
                 Quit();
             }
         }
-            Task.Run(CheckStartTasks);
+        Task.Run(CheckStartTasks);
     }
 
     void CheckStartTasks()

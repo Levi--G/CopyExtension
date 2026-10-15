@@ -2,7 +2,6 @@
 using CopyExtension.Tasks;
 using CopyExtension.UI;
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.Text;

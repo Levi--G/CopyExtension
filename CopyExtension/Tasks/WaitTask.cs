@@ -1,9 +1,4 @@
-﻿using CopyExtension.Helpers;
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace CopyExtension.Tasks
+﻿namespace CopyExtension.Tasks
 {
     internal class WaitTask : CopyTask
     {

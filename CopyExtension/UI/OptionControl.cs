@@ -27,7 +27,7 @@ public class OptionControl : UserControl
         Grid.Children.Add(flow);
         foreach (var item in choices)
         {
-            var b = new Button() { Content = new TextBlock() { Text = item, HorizontalAlignment=HorizontalAlignment.Center }, Margin = new Thickness(2), Width = 80, Height = 32 };
+            var b = new Button() { Content = new TextBlock() { Text = item, HorizontalAlignment = HorizontalAlignment.Center }, Margin = new Thickness(2), Width = 80, Height = 32 };
             b.Click += (s, e) =>
             {
                 OnChoose?.Invoke(item);

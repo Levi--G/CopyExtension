@@ -1,11 +1,6 @@
-﻿using Avalonia.Logging;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO.Pipes;
+﻿using System.IO.Pipes;
 using System.Security.AccessControl;
 using System.Security.Principal;
-using System.Text;
 
 namespace CopyExtension
 {

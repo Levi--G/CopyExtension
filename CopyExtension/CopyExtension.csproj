@@ -10,13 +10,14 @@
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <!--<PublishAot>true</PublishAot>-->
+    <PublishAot>true</PublishAot>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>WinExe</OutputType>
     <EnableMsixTooling>true</EnableMsixTooling>
     <PublishProfile>Properties\PublishProfiles\FolderProfile.pubxml</PublishProfile>
     <SupportedOSPlatformVersion>10.0.26100.0</SupportedOSPlatformVersion>
     <Platforms>AnyCPU;x64</Platforms>
+    <DefaultLanguage>en-US</DefaultLanguage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -63,13 +64,6 @@
     </PackageReference>
     <PackageReference Include="System.CommandLine" Version="2.0.12" />
   </ItemGroup>
-
-  <!--
-  <Target Name="MyPreCompileTarget" AfterTargets="Clean">
-    <Exec Command="taskkill /f /im explorer.exe
-          START /B explorer.exe" />
-  </Target>
-  -->
 
   <ItemGroup>
     <None Update="ExplorerCommandVerb.dll">

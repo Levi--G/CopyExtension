@@ -15,20 +15,15 @@
   IgnorableNamespaces="uap uap2 uap3 rescap desktop desktop4 desktop5 desktop6 virtualization">
 
   <Identity
-    Name="CopyExtension"
-    Publisher="CN=Levi Gillis"
+    Name="35879WobGames.SFCopyExtension"
+    Publisher="CN=73338FE3-9FD7-4276-B325-656166DF3F24"
     Version="1.0.0.0" />
 
   <Properties>
-    <DisplayName>Copy Extension</DisplayName>
-    <PublisherDisplayName>Levi Gillis</PublisherDisplayName>
+    <DisplayName>SFCopyExtension</DisplayName>
+    <PublisherDisplayName>SmolFennec</PublisherDisplayName>
     <Logo>Images\StoreLogo.png</Logo>
     <desktop6:FileSystemWriteVirtualization>disabled</desktop6:FileSystemWriteVirtualization>
-    <!--<virtualization:FileSystemWriteVirtualization>
-      <virtualization:ExcludedDirectories>
-        <virtualization:ExcludedDirectory>$(KnownFolder:LocalAppData)\CopyExtension</virtualization:ExcludedDirectory>
-      </virtualization:ExcludedDirectories>
-    </virtualization:FileSystemWriteVirtualization>-->
   </Properties>
 
   <Dependencies>
@@ -44,7 +39,7 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="Copy Extension"
+        DisplayName="SFCopyExtension"
         Description="CopyExtension.Package"
         BackgroundColor="transparent"
         Square150x150Logo="Images\Square150x150Logo.png"

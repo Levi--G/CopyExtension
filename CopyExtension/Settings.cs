@@ -69,11 +69,11 @@ public class Settings
         CustomCommandSetting? Custom3 = settings.CustomCommands.FirstOrDefault(c => c.ExplorerId == 3);
         CustomCommandSetting? Custom4 = settings.CustomCommands.FirstOrDefault(c => c.ExplorerId == 4);
         CustomCommandSetting? Custom5 = settings.CustomCommands.FirstOrDefault(c => c.ExplorerId == 5);
-        File.WriteAllText(VerbSavePath, $@"EnableCompareNames={(settings.EnableCompareNames?"true":"")}
-EnableHardlink={(settings.EnableHardlink ? "true":"")}
-EnableNukeFolder={(settings.EnableNukeFolder ? "true":"")}
-EnableNukeFile={(settings.EnableNukeFile ? "true":"")}
-EnableCleanSource={(settings.EnableCleanSource ? "true":"")}
+        File.WriteAllText(VerbSavePath, $@"EnableCompareNames={(settings.EnableCompareNames ? "true" : "")}
+EnableHardlink={(settings.EnableHardlink ? "true" : "")}
+EnableNukeFolder={(settings.EnableNukeFolder ? "true" : "")}
+EnableNukeFile={(settings.EnableNukeFile ? "true" : "")}
+EnableCleanSource={(settings.EnableCleanSource ? "true" : "")}
 CustomName1={Custom1?.Name}
 CustomName2={Custom2?.Name}
 CustomName3={Custom3?.Name}
@@ -135,7 +135,7 @@ public class CustomCommand
         switch (Type)
         {
             case CommandType.Copy:
-                return new CopyMoveTask(GetSource(context, clipboard), GetTarget(context, clipboard).Single(), CopyJobType.Copy, Filters) { DefaultExistsAction= defaultExistsAction };
+                return new CopyMoveTask(GetSource(context, clipboard), GetTarget(context, clipboard).Single(), CopyJobType.Copy, Filters) { DefaultExistsAction = defaultExistsAction };
 
             case CommandType.Move:
                 return new CopyMoveTask(GetSource(context, clipboard), GetTarget(context, clipboard).Single(), CopyJobType.Move, Filters) { DefaultExistsAction = defaultExistsAction };

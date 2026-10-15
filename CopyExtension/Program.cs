@@ -1,5 +1,4 @@
 ﻿using CopyExtension.Helpers;
-using System.CommandLine.Parsing;
 
 namespace CopyExtension;
 

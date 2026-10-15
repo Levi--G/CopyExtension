@@ -136,7 +136,7 @@ internal class FileJob
     private void ProgressFull(long p)
     {
         //we faking the double speed to make the progressbar fill up
-        CurrentProgress = Math.Min(p*2, TotalProgress);
+        CurrentProgress = Math.Min(p * 2, TotalProgress);
         OnProgress?.Invoke();
     }
 
