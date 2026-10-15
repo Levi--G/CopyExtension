@@ -1,8 +1,7 @@
-
 Privacy Policy for SFCopyExtension
 
 Last Updated: 15/10/2026
-Smolfennec/Levi Gillis ("we," "our," or "us") operates the SFCopyExtension mobile application.
+SmolFennec/Levi Gillis ("we," "our," or "us") operates the SFCopyExtension mobile application.
 Our privacy philosophy is simple: We do not collect, store, use, or share any personal information whatsoever.
 By using SFCopyExtension, you agree to the terms outlined in this policy. If you do not agree, please do not use the application.
 
