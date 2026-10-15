@@ -6,3 +6,5 @@ obj/
 Debug/
 CopyExtension/AppPackages/*
 CopyExtension/BundleArtifacts/*
+FolderCompare/*
+SaveFileCreator/*
