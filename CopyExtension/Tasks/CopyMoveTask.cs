@@ -51,6 +51,8 @@ public class CopyMoveTask : CopyTask
                 jobs.ForEach(j => j.ResetProgress());
                 this.TotalItems = jobs.Count;
                 this.TotalProgress = jobs.Sum(j => j.TotalProgress);
+                CurrentItems = 0;
+                CurrentProgress = 0;
                 DoStatus(true);
                 if (CheckCancel()) { return; }
                 var results = RunJobs(jobs).Where(r => !r.Success).ToList();
@@ -122,6 +124,7 @@ public class CopyMoveTask : CopyTask
                 CurrentName = j.Name;
             }
             var r = j.Copy();
+            CurrentItems++;
             if (!batched)
             {
                 j.OnProgress -= prog;

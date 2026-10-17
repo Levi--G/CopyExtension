@@ -96,35 +96,50 @@ public class NukeTask : CopyTask
         }
     }
 
+    //TODO try in case of no permissions
+
+    private bool DirHasFiles(string Dir)
+    {
+        return Directory.EnumerateFiles(Dir).Any(f => !Path.GetFileName(f.AsSpan()).Equals("Thumbs.db", StringComparison.Ordinal));
+    }
+
     private bool FindEmptyDirsRecursive(string Dir, List<string> emptydirs)
     {
         if (CheckCancel()) { return false; }
         var empty = true;
-        foreach (var subdir in Directory.EnumerateDirectories(Dir))
+        try
         {
-            empty &= FindEmptyDirsRecursive(subdir, emptydirs);
+            foreach (var subdir in Directory.EnumerateDirectories(Dir))
+            {
+                empty &= FindEmptyDirsRecursive(subdir, emptydirs);
+            }
+            if (empty && !DirHasFiles(Dir))
+            {
+                emptydirs.Add(Dir);
+                return true;
+            }
         }
-        if (empty && !Directory.EnumerateFiles(Dir).Any(f => !Path.GetFileName(f.AsSpan()).Equals("Thumbs.db", StringComparison.Ordinal)))
-        {
-            emptydirs.Add(Dir);
-            return true;
-        }
+        catch { }
         return false;
     }
 
     private void FindEmptyFilesRecursive(string Dir, List<string> emptyfiles)
     {
         if (CheckCancel()) { return; }
-        foreach (var subdir in Directory.EnumerateDirectories(Dir))
+        try
         {
-            FindEmptyFilesRecursive(subdir, emptyfiles);
-        }
-        foreach (var file in Directory.EnumerateFiles(Dir))
-        {
-            if (file.Length == 0)
+            foreach (var subdir in Directory.EnumerateDirectories(Dir))
             {
-                emptyfiles.Add(file);
+                FindEmptyFilesRecursive(subdir, emptyfiles);
+            }
+            foreach (var file in Directory.EnumerateFiles(Dir))
+            {
+                if (file.Length == 0)
+                {
+                    emptyfiles.Add(file);
+                }
             }
         }
+        catch { }
     }
 }

@@ -17,7 +17,7 @@
   <Identity
     Name="35879WobGames.SFCopyExtension"
     Publisher="CN=73338FE3-9FD7-4276-B325-656166DF3F24"
-    Version="1.0.0.0" />
+    Version="1.0.1.0" />
 
   <Properties>
     <DisplayName>SFCopyExtension</DisplayName>
