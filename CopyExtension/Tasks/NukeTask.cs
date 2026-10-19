@@ -96,8 +96,6 @@ public class NukeTask : CopyTask
         }
     }
 
-    //TODO try in case of no permissions
-
     private bool DirHasFiles(string Dir)
     {
         return Directory.EnumerateFiles(Dir).Any(f => !Path.GetFileName(f.AsSpan()).Equals("Thumbs.db", StringComparison.Ordinal));

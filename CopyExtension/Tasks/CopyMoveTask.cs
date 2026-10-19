@@ -264,6 +264,10 @@ public class CopyMoveTask : CopyTask
                     sources.ForEach(j => j.ExistsAction = method);
                 }
             }
+            else
+            {
+                //TODO: sort the sources with files first so the empty dirs can be deleted
+            }
             return sources;
         }
         else if (copyType == CopyJobType.CompareNames)
@@ -302,6 +306,8 @@ public class CopyMoveTask : CopyTask
         }
         throw new NotImplementedException();
     }
+
+    //todo catch errors if enum fails
 
     private IEnumerable<FileJob> GetFiles(string fileordir, string? source, string target)
     {

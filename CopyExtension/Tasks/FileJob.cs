@@ -258,10 +258,17 @@ internal class FileJob
                     return new FileResult() { Job = this, Success = true };
                 }
             }
-            else if (!IsFile && CopyType.IsAnyMoveOrCopy())
+            else
             {
-                DirExt.CreateSafe(Target);
-                return new FileResult() { Job = this, Success = true };
+                if (CopyType.IsAnyMoveOrCopy())
+                {
+                    DirExt.CreateSafe(Target);
+                    return new FileResult() { Job = this, Success = true };
+                }
+                else
+                {
+                    //TODO check if empty and delete for compare
+                }
             }
             return new FileResult() { Job = this, Success = false };
         }
