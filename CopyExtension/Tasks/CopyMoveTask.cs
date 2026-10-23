@@ -289,34 +289,6 @@ public class CopyMoveTask : CopyTask
         }
         else if (copyType == CopyJobType.CompareNames)
         {
-            IEnumerable<string> Recurse(string d)
-            {
-                foreach (var dir in Directory.EnumerateDirectories(d))
-                {
-                    foreach (var file in Recurse(dir))
-                    {
-                        yield return file;
-                    }
-                }
-                foreach (var file in Directory.EnumerateFiles(d))
-                {
-                    yield return file;
-                }
-            }
-            IEnumerable<string> RecurseIfDir(string s)
-            {
-                if (Directory.Exists(s))
-                {
-                    foreach (var item in Recurse(s))
-                    {
-                        yield return item;
-                    }
-                }
-                else if (File.Exists(s))
-                {
-                    yield return s;
-                }
-            }
             List<string> sources = [];
             foreach (var source in sourcefolders)
             {
@@ -387,7 +359,7 @@ public class CopyMoveTask : CopyTask
             {
                 foreach (var subdir in Directory.GetDirectories(dir))
                 {
-                    GetFilesRecursive(subdir, source, target, files, dirs);
+                    GetExistingFilesRecursive(subdir, source, target, files, dirs);
                 }
                 foreach (var file in Directory.GetFiles(dir))
                 {
