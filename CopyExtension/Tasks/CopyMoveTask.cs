@@ -157,8 +157,10 @@ public class CopyMoveTask : CopyTask
         return results;
     }
 
+    //TODO: something goes wrong with batch jobs when copying large amount of small files
     private void RunJobs(List<FileJob> jobs, Action<FileJob, bool> action)
     {
+        if (jobs.Count < 1) { return; }
         if (Program.Options.SmallFileSize < 1)
         {
             foreach (var job in jobs)
@@ -168,12 +170,10 @@ public class CopyMoveTask : CopyTask
             }
             return;
         }
-        if (jobs.Count < 1) { return; }
         var q = new Queue<FileJob>(jobs);
         var current = q.Dequeue();
         while (current != null && !CheckCancel())
         {
-            var next = q.Count > 0 ? q.Peek() : null;
             if (current.IsFile)
             {
                 if (current.FileSize > Program.Options.SmallFileSize)
@@ -208,6 +208,7 @@ public class CopyMoveTask : CopyTask
                                 busy++;
                             }
                             var threadeditem = current;
+                            //TODO check for false return
                             ThreadPool.QueueUserWorkItem((a) =>
                             {
                                 try

@@ -354,7 +354,7 @@ internal class FileJob
         {
             long total = 0;
             int read = 1;
-            while (read != 0)
+            while (read != 0 && total <= len)
             {
                 if (CheckCancel()) { return false; }
                 var b1 = s.ReadAtLeastAsync(buffer1, BUFFERSIZE, false);
