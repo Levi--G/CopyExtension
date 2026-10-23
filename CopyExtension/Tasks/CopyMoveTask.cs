@@ -185,7 +185,8 @@ public class CopyMoveTask : CopyTask
                 {
                     CurrentAction = (copyType == CopyJobType.Copy || copyType == CopyJobType.CopyUnsafe) ? FileJob.COPYING : ((copyType == CopyJobType.Move || copyType == CopyJobType.MoveUnsafe) ? FileJob.MOVING : FileJob.COMPARING);
                     CurrentName = "Bulk operation";
-                    var key = new object();
+                    DoStatus(false);
+                    var busykey = new Lock();
                     var busy = 0;
 
                     while (current != null)
@@ -194,7 +195,7 @@ public class CopyMoveTask : CopyTask
                         {
                             while (!CheckCancel())
                             {
-                                lock (key)
+                                lock (busykey)
                                 {
                                     if (busy < 5)
                                     {
@@ -203,7 +204,7 @@ public class CopyMoveTask : CopyTask
                                 }
                                 Thread.Sleep(10);
                             }
-                            lock (key)
+                            lock (busykey)
                             {
                                 busy++;
                             }
@@ -216,17 +217,23 @@ public class CopyMoveTask : CopyTask
                                 }
                                 finally
                                 {
-                                    lock (key)
+                                    lock (busykey)
                                     {
                                         busy--;
                                     }
                                 }
                             }))
                             {
-                                action(threadeditem, true);
-                                lock (key)
+                                try
                                 {
-                                    busy--;
+                                    action(threadeditem, true);
+                                }
+                                finally
+                                {
+                                    lock (busykey)
+                                    {
+                                        busy--;
+                                    }
                                 }
                             }
                         }
@@ -238,9 +245,9 @@ public class CopyMoveTask : CopyTask
                     }
                     while (!CheckCancel())
                     {
-                        lock (key)
+                        lock (busykey)
                         {
-                            if (busy == 0)
+                            if (busy <= 0)
                             {
                                 break;
                             }
