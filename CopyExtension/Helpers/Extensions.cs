@@ -118,11 +118,11 @@ internal static class DirExt
     }
     public static bool IsEmpty(string path)
     {
-        return Directory.EnumerateFileSystemEntries(path).Any(f => !FileExt.IsSystemFile(f));
+        return !Directory.EnumerateFileSystemEntries(path).Any(f => !FileExt.IsSystemFile(f));
     }
     public static bool HasNoFiles(string path)
     {
-        return Directory.EnumerateFiles(path).Any(f => !FileExt.IsSystemFile(f));
+        return !Directory.EnumerateFiles(path).Any(f => !FileExt.IsSystemFile(f));
     }
 }
 internal static class FileExt
