@@ -110,6 +110,7 @@ internal static class DirExt
             {
                 var a = File.GetAttributes(path);
                 a &= ~(FileAttributes.Hidden | FileAttributes.ReadOnly | FileAttributes.System);
+                File.SetAttributes(path, a);
             }
             catch { }
         }
@@ -145,8 +146,9 @@ internal static class FileExt
             catch { }
             try
             {
-               var a= File.GetAttributes(path);
+                var a = File.GetAttributes(path);
                 a &= ~(FileAttributes.Hidden | FileAttributes.ReadOnly | FileAttributes.System);
+                File.SetAttributes(path, a);
             }
             catch { }
         }

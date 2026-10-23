@@ -285,12 +285,10 @@ public class CopyMoveTask : CopyTask
         else if (copyType == CopyJobType.Compare)
         {
             List<FileJob> files = [];
-            List<FileJob> dirs = [];
             foreach (var source in sourcefolders)
             {
-                GetExistingFiles(source, Path.GetDirectoryName(source), target, files, dirs);
+                GetExistingFiles(source, Path.GetDirectoryName(source), target, files, files);
             }
-            files.AddRange(dirs);
             return files;
         }
         else if (copyType == CopyJobType.CompareNames)
