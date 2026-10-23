@@ -106,6 +106,12 @@ internal static class DirExt
                 return true;
             }
             catch { }
+            try
+            {
+                var a = File.GetAttributes(path);
+                a &= ~(FileAttributes.Hidden | FileAttributes.ReadOnly | FileAttributes.System);
+            }
+            catch { }
         }
         return false;
     }
@@ -135,6 +141,12 @@ internal static class FileExt
             {
                 File.Delete(path);
                 return true;
+            }
+            catch { }
+            try
+            {
+               var a= File.GetAttributes(path);
+                a &= ~(FileAttributes.Hidden | FileAttributes.ReadOnly | FileAttributes.System);
             }
             catch { }
         }
