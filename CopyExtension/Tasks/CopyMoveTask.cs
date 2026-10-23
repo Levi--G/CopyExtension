@@ -208,8 +208,7 @@ public class CopyMoveTask : CopyTask
                                 busy++;
                             }
                             var threadeditem = current;
-                            //TODO check for false return
-                            ThreadPool.QueueUserWorkItem((a) =>
+                            if (!ThreadPool.QueueUserWorkItem((a) =>
                             {
                                 try
                                 {
@@ -222,7 +221,14 @@ public class CopyMoveTask : CopyTask
                                         busy--;
                                     }
                                 }
-                            });
+                            }))
+                            {
+                                action(threadeditem, true);
+                                lock (key)
+                                {
+                                    busy--;
+                                }
+                            }
                         }
                         else
                         {

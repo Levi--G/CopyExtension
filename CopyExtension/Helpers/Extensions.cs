@@ -84,14 +84,16 @@ internal static class Extensions
 }
 internal static class DirExt
 {
-    public static void CreateSafe(string? path)
+    public static bool CreateSafe(string? path)
     {
-        if (path == null) { return; }
+        if (path == null) { return true; }
         try
         {
             Directory.CreateDirectory(path);
+            return true;
         }
         catch { }
+        return false;
     }
     public static bool DeleteSafe(string? path, bool recursive = true)
     {
@@ -110,15 +112,19 @@ internal static class DirExt
 }
 internal static class FileExt
 {
-    public static void CreateSafe(string? path)
+    public static bool CreateSafe(string? path)
     {
-        if (path == null) { return; }
+        if (path == null) { return true; }
         try
         {
-            File.WriteAllBytes(path, []);
-            //File.Create(path).Dispose();
+            if (!File.Exists(path))
+            {
+                File.WriteAllBytes(path, []);
+            }
+            return true;
         }
         catch { }
+        return false;
     }
     public static bool DeleteSafe(string? path)
     {

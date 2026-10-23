@@ -257,13 +257,13 @@ internal class FileJob
                     }
                     return new FileResult() { Job = this, Success = true };
                 }
+                return new FileResult() { Job = this, Success = false };
             }
             else
             {
                 if (CopyType.IsAnyMoveOrCopy())
                 {
-                    DirExt.CreateSafe(Target);
-                    return new FileResult() { Job = this, Success = true };
+                    return new FileResult() { Job = this, Success = DirExt.CreateSafe(Target) };
                 }
                 else
                 {
@@ -276,11 +276,12 @@ internal class FileJob
                                 DirExt.DeleteSafe(Target, false);
                             }
                         }
+                        return new FileResult() { Job = this, Success = true };
                     }
                     catch { }
+                    return new FileResult() { Job = this, Success = false, Reason = "Error" };
                 }
             }
-            return new FileResult() { Job = this, Success = false };
         }
         catch (Exception e)
         {
