@@ -157,7 +157,6 @@ public class CopyMoveTask : CopyTask
         return results;
     }
 
-    //TODO: something goes wrong with batch jobs when copying large amount of small files
     private void RunJobs(List<FileJob> jobs, Action<FileJob, bool> action)
     {
         if (jobs.Count < 1) { return; }
@@ -191,7 +190,7 @@ public class CopyMoveTask : CopyTask
 
                     while (current != null)
                     {
-                        if (current.FileSize < Program.Options.SmallFileSize)
+                        if (current.FileSize <= Program.Options.SmallFileSize)
                         {
                             while (!CheckCancel())
                             {
