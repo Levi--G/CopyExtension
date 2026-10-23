@@ -1,4 +1,5 @@
 ﻿using CopyExtension.UI;
+using System.Diagnostics;
 
 namespace CopyExtension.Tasks;
 
@@ -138,10 +139,12 @@ public abstract class CopyTask
 
     protected static string Replacedir(string f, string? source, string target)
     {
-        var rel = f;
+        var rel = f.AsSpan();
+        Debug.Assert(!string.IsNullOrEmpty(source));
         if (!string.IsNullOrEmpty(source))
         {
-            rel = f.Replace(source, "");
+            Debug.Assert(rel.StartsWith(source));
+            rel = rel[source.Length..];
         }
         return Path.Join(target, rel.TrimStart('\\'));
     }

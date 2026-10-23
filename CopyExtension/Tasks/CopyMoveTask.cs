@@ -259,7 +259,7 @@ public class CopyMoveTask : CopyTask
 
     private List<FileJob> Discover(string[] sourcefolders, string target)
     {
-        if (copyType != CopyJobType.CompareNames)
+        if (copyType.IsAnyMoveOrCopy())
         {
             List<FileJob> files = [];
             List<FileJob> dirs = [];
@@ -267,22 +267,25 @@ public class CopyMoveTask : CopyTask
             {
                 GetFiles(source, Path.GetDirectoryName(source), target, files, dirs);
             }
-            if (copyType.IsAnyMoveOrCopy())
+            var existing = files.Where(j => File.Exists(j.Target)).ToList();
+            if (existing.Count > 0)
             {
-                var existing = files.Where(j => File.Exists(j.Target)).ToList();
-                if (existing.Count > 0)
-                {
-                    var method = ShowOverwriteDialog(existing, files.Count);
-                    files.ForEach(j => j.ExistsAction = method);
-                }
-                dirs.AddRange(files);
-                return dirs;
+                var method = ShowOverwriteDialog(existing, files.Count);
+                files.ForEach(j => j.ExistsAction = method);
             }
-            else
+            dirs.AddRange(files);
+            return dirs;
+        }
+        else if (copyType == CopyJobType.Compare)
+        {
+            List<FileJob> files = [];
+            List<FileJob> dirs = [];
+            foreach (var source in sourcefolders)
             {
-                files.AddRange(dirs);
-                return files;
+                GetExistingFiles(source, Path.GetDirectoryName(source), target, files, dirs);
             }
+            files.AddRange(dirs);
+            return files;
         }
         else if (copyType == CopyJobType.CompareNames)
         {
@@ -314,8 +317,15 @@ public class CopyMoveTask : CopyTask
                     yield return s;
                 }
             }
-            var names = sourcefolders.SelectMany(s => RecurseIfDir(s)).Select(Path.GetFileName).ToList();
-            var targetfiles = RecurseIfDir(target).Where(f => names.Contains(Path.GetFileName(f))).Select(f => new FileJob(f, f, true, CopyJobType.CompareNames, CheckCancel)).ToList();
+            List<string> sources = [];
+            foreach (var source in sourcefolders)
+            {
+                RecursePaths(source, sources);
+            }
+            List<string> targets = [];
+            RecursePaths(target, targets);
+            var names = sources.Select(Path.GetFileName).ToList();
+            var targetfiles = targets.Where(f => names.Contains(Path.GetFileName(f))).Select(f => new FileJob(f, f, true, CopyJobType.CompareNames, CheckCancel)).ToList();
             return targetfiles;
         }
         throw new NotImplementedException();
@@ -349,5 +359,74 @@ public class CopyMoveTask : CopyTask
             dirs.Add(new FileJob(dir, Replacedir(dir, source, target), false, copyType, CheckCancel));
         }
         catch { }//missing permissions doesn't concern us for now
+    }
+
+    private void GetExistingFiles(string fileordir, string? source, string target, List<FileJob> files, List<FileJob> dirs)
+    {
+        if (Directory.Exists(fileordir))
+        {
+            GetExistingFilesRecursive(fileordir, source, target, files, dirs);
+        }
+        else if (File.Exists(fileordir))
+        {
+            var targetfile = Replacedir(fileordir, source, target);
+            if (File.Exists(targetfile))
+            {
+                files.Add(new FileJob(fileordir, targetfile, true, copyType, CheckCancel));
+            }
+        }
+    }
+
+    private void GetExistingFilesRecursive(string dir, string? source, string target, List<FileJob> files, List<FileJob> dirs)
+    {
+        if (CheckCancel()) { return; }
+        try
+        {
+            var targetdir = Replacedir(dir, source, target);
+            if (Directory.Exists(targetdir))
+            {
+                foreach (var subdir in Directory.GetDirectories(dir))
+                {
+                    GetFilesRecursive(subdir, source, target, files, dirs);
+                }
+                foreach (var file in Directory.GetFiles(dir))
+                {
+                    var targetfile = Replacedir(file, source, target);
+                    if (File.Exists(targetfile))
+                    {
+                        files.Add(new FileJob(file, targetfile, true, copyType, CheckCancel));
+                    }
+                }
+                dirs.Add(new FileJob(dir, targetdir, false, copyType, CheckCancel));
+            }
+        }
+        catch { }//missing permissions doesn't concern us for now
+    }
+    void RecursePaths(string d, List<string> files)
+    {
+        if (CheckCancel()) { return; }
+        try
+        {
+            foreach (var dir in Directory.EnumerateDirectories(d))
+            {
+                RecursePaths(dir, files);
+            }
+            foreach (var file in Directory.EnumerateFiles(d))
+            {
+                files.Add(file);
+            }
+        }
+        catch { }//missing permissions doesn't concern us for now
+    }
+    void RecursePathsIfDir(string s, List<string> files)
+    {
+        if (Directory.Exists(s))
+        {
+            RecursePaths(s, files);
+        }
+        else if (File.Exists(s))
+        {
+            files.Add(s);
+        }
     }
 }
