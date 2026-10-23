@@ -123,6 +123,7 @@ internal class HardlinkTask : CopyTask
 
     private void GetFilesRecursive(string dir, string? source, string target, List<FileJob> files, List<FileJob> dirs)
     {
+        if (CheckCancel()) { return; }
         try
         {
             foreach (var subdir in Directory.GetDirectories(dir))

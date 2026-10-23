@@ -77,7 +77,7 @@ public class SourceTask : CopyTask
     readonly string[] csexts = { ".cs", ".csproj", ".sln" };
     private void FindToDeleteRecursive(string Dir, List<string> todelete)
     {
-        if (IsCancelled) { return; }
+        if (CheckCancel()) { return; }
         try
         {
             bool iscs = Directory.EnumerateFiles(Dir).Any(f => csexts.Contains(Path.GetExtension(f).ToLower()));
