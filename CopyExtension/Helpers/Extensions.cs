@@ -116,6 +116,14 @@ internal static class DirExt
         }
         return false;
     }
+    public static bool IsEmpty(string path)
+    {
+        return Directory.EnumerateFileSystemEntries(path).Any(f => !FileExt.IsSystemFile(f));
+    }
+    public static bool HasNoFiles(string path)
+    {
+        return Directory.EnumerateFiles(path).Any(f => !FileExt.IsSystemFile(f));
+    }
 }
 internal static class FileExt
 {
@@ -153,6 +161,11 @@ internal static class FileExt
             catch { }
         }
         return false;
+    }
+    public static bool IsSystemFile(ReadOnlySpan<char> path)
+    {
+        var name = Path.GetFileName(path);
+        return name.Equals("Thumbs.db", StringComparison.Ordinal) || name.Equals("desktop.ini", StringComparison.Ordinal);
     }
 }
 internal static class PathExt

@@ -269,14 +269,11 @@ internal class FileJob
                 {
                     try
                     {
-                        if (Directory.Exists(Target))
+                        if (!Directory.Exists(Target) || !DirExt.IsEmpty(Target) || DirExt.DeleteSafe(Target, false))
                         {
-                            if (!Directory.EnumerateFileSystemEntries(Target).Any())
-                            {
-                                DirExt.DeleteSafe(Target, false);
-                            }
+                            return new FileResult() { Job = this, Success = true };
                         }
-                        return new FileResult() { Job = this, Success = true };
+                        return new FileResult() { Job = this, Success = false, Reason = "Delete failed" };
                     }
                     catch { }
                     return new FileResult() { Job = this, Success = false, Reason = "Error" };

@@ -175,7 +175,7 @@ public class CopyMoveTask : CopyTask
         {
             if (current.IsFile)
             {
-                if (current.FileSize > Program.Options.SmallFileSize)
+                if (current.FileSize > Program.Options.SmallFileSize || !current.IsFile)
                 {
                     action(current, false);
                     current = q.Count > 0 ? q.Dequeue() : null;
@@ -190,7 +190,7 @@ public class CopyMoveTask : CopyTask
 
                     while (current != null)
                     {
-                        if (current.FileSize <= Program.Options.SmallFileSize)
+                        if (current.FileSize <= Program.Options.SmallFileSize && current.IsFile)
                         {
                             while (!CheckCancel())
                             {

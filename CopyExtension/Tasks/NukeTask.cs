@@ -93,11 +93,6 @@ public class NukeTask : CopyTask
         }
     }
 
-    private bool DirHasFiles(string Dir)
-    {
-        return Directory.EnumerateFiles(Dir).Any(f => !Path.GetFileName(f.AsSpan()).Equals("Thumbs.db", StringComparison.Ordinal));
-    }
-
     private bool FindEmptyDirsRecursive(string Dir, List<string> emptydirs)
     {
         if (CheckCancel()) { return false; }
@@ -108,7 +103,7 @@ public class NukeTask : CopyTask
             {
                 empty &= FindEmptyDirsRecursive(subdir, emptydirs);
             }
-            if (empty && !DirHasFiles(Dir))
+            if (empty && DirExt.HasNoFiles(Dir))
             {
                 emptydirs.Add(Dir);
                 return true;
