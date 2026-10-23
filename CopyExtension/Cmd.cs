@@ -153,6 +153,9 @@ internal class Cmd
         Command waitCommand = new("wait", "Waits for a number of seconds while locking volumes");
         waitCommand.Arguments.Add(nonreqdestinationArgument);
         waitCommand.Options.Add(secondsOption);
+        Command hardlinkCommand = new("hardlink", "Hardlinks full file and directory structures");
+        hardlinkCommand.Validators.Add(sourcevalidator);
+        hardlinkCommand.Arguments.Add(destinationArgument);
 
         Command customCommand = new("custom", "Execute custom actions");
         customCommand.Arguments.Add(destinationArgument);
@@ -188,7 +191,6 @@ internal class Cmd
             windowMgr.Start();
             windowMgr.AddTask(new CopyMoveTask(GetSource(windowMgr, source, clip), destination, unsafeo ? CopyJobType.CopyUnsafe : CopyJobType.Copy, null) { DefaultExistsAction = exists });
             DoExtraPost(parseResult, parseResult.GetValue(waitOption));
-
         });
 
         moveCommand.SetAction(parseResult =>
@@ -252,6 +254,17 @@ internal class Cmd
             DoExtraPost(parseResult, parseResult.GetValue(waitOption));
         });
 
+        hardlinkCommand.SetAction(parseResult =>
+        {
+            GetOptions(parseResult, out var clip, out var source, out var console, out var log, out var options);
+            DoExtraPre(parseResult, log, options);
+            var destination = parseResult.GetValue(destinationArgument) ?? throw new ArgumentException("destination is mandatory");
+            windowMgr ??= new(console);
+            windowMgr.Start();
+            windowMgr.AddTask(new HardlinkTask(GetSource(windowMgr, source, clip), destination, null));
+            DoExtraPost(parseResult, parseResult.GetValue(waitOption));
+        });
+
         customCommand.SetAction(parseResult =>
         {
             GetOptions(parseResult, out var clip, out var source, out var console, out var log, out var options);
@@ -279,8 +292,6 @@ internal class Cmd
             }
             DoExtraPost(parseResult, parseResult.GetValue(waitOption));
         });
-
-        //Todo: hardlink
 
         return rootCommand;
     }
