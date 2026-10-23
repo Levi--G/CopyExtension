@@ -254,21 +254,28 @@ public class CopyMoveTask : CopyTask
     {
         if (copyType != CopyJobType.CompareNames)
         {
-            var sources = sourcefolders.SelectMany(s => GetFiles(s, Path.GetDirectoryName(s), target)).ToList();
+            List<FileJob> files = [];
+            List<FileJob> dirs = [];
+            foreach (var source in sourcefolders)
+            {
+                GetFiles(source, Path.GetDirectoryName(source), target, files, dirs);
+            }
             if (copyType.IsAnyMoveOrCopy())
             {
-                var existing = sources.Where(j => File.Exists(j.Target)).ToList();
+                var existing = files.Where(j => File.Exists(j.Target)).ToList();
                 if (existing.Count > 0)
                 {
-                    var method = ShowOverwriteDialog(existing, sources.Count);
-                    sources.ForEach(j => j.ExistsAction = method);
+                    var method = ShowOverwriteDialog(existing, files.Count);
+                    files.ForEach(j => j.ExistsAction = method);
                 }
+                dirs.AddRange(files);
+                return dirs;
             }
             else
             {
-                //TODO: sort the sources with files first so the empty dirs can be deleted
+                files.AddRange(dirs);
+                return files;
             }
-            return sources;
         }
         else if (copyType == CopyJobType.CompareNames)
         {
@@ -307,36 +314,32 @@ public class CopyMoveTask : CopyTask
         throw new NotImplementedException();
     }
 
-    //todo catch errors if enum fails
-
-    private IEnumerable<FileJob> GetFiles(string fileordir, string? source, string target)
+    private void GetFiles(string fileordir, string? source, string target, List<FileJob> files, List<FileJob> dirs)
     {
         if (Directory.Exists(fileordir))
         {
-            foreach (var item in GetFilesRecursive(fileordir, source, target))
-            {
-                yield return item;
-            }
+            GetFilesRecursive(fileordir, source, target, files, dirs);
         }
         else if (File.Exists(fileordir))
         {
-            yield return new FileJob(fileordir, Replacedir(fileordir, source, target), true, copyType, CheckCancel);
+            files.Add(new FileJob(fileordir, Replacedir(fileordir, source, target), true, copyType, CheckCancel));
         }
     }
 
-    private IEnumerable<FileJob> GetFilesRecursive(string dir, string? source, string target)
+    private void GetFilesRecursive(string dir, string? source, string target, List<FileJob> files, List<FileJob> dirs)
     {
-        yield return new FileJob(dir, Replacedir(dir, source, target), false, copyType, CheckCancel);
-        foreach (var file in Directory.GetFiles(dir))
+        try
         {
-            yield return new FileJob(file, Replacedir(file, source, target), true, copyType, CheckCancel);
-        }
-        foreach (var subdir in Directory.GetDirectories(dir))
-        {
-            foreach (var item in GetFilesRecursive(subdir, source, target))
+            foreach (var subdir in Directory.GetDirectories(dir))
             {
-                yield return item;
+                GetFilesRecursive(subdir, source, target, files, dirs);
             }
+            foreach (var file in Directory.GetFiles(dir))
+            {
+                files.Add(new FileJob(file, Replacedir(file, source, target), true, copyType, CheckCancel));
+            }
+            dirs.Add(new FileJob(dir, Replacedir(dir, source, target), false, copyType, CheckCancel));
         }
+        catch { }//missing permissions doesn't concern us for now
     }
 }

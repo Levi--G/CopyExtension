@@ -92,14 +92,18 @@ internal class DeleteTask : CopyTask
     private void FindItemsRecursive(string Dir, List<string> items)
     {
         if (IsCancelled) { return; }
-        foreach (var subdir in Directory.GetDirectories(Dir))
+        try
         {
-            items.Add(subdir);
-            FindItemsRecursive(subdir, items);
+            foreach (var subdir in Directory.GetDirectories(Dir))
+            {
+                items.Add(subdir);
+                FindItemsRecursive(subdir, items);
+            }
+            foreach (var file in Directory.GetFiles(Dir))
+            {
+                items.Add(file);
+            }
         }
-        foreach (var file in Directory.GetFiles(Dir))
-        {
-            items.Add(file);
-        }
+        catch { }
     }
 }

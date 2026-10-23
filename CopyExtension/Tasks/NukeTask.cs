@@ -37,10 +37,7 @@ public class NukeTask : CopyTask
                 foreach (var dir in target)
                 {
                     FindEmptyDirsRecursive(dir, todelete);
-                    if (todelete.Contains(dir))
-                    {
-                        todelete.Remove(dir);
-                    }
+                    todelete.Remove(dir);
                 }
             }
             else

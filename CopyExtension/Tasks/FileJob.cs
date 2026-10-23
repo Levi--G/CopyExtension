@@ -267,7 +267,17 @@ internal class FileJob
                 }
                 else
                 {
-                    //TODO check if empty and delete for compare
+                    try
+                    {
+                        if (Directory.Exists(Target))
+                        {
+                            if (!Directory.EnumerateFileSystemEntries(Target).Any())
+                            {
+                                DirExt.DeleteSafe(Target, false);
+                            }
+                        }
+                    }
+                    catch { }
                 }
             }
             return new FileResult() { Job = this, Success = false };

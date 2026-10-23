@@ -11,7 +11,7 @@ internal class HardlinkTask : CopyTask
     private string[] sourcefolders;
     private string target;
 
-    public HardlinkTask(string[] sourcefolders, string target, Filter[] filters) : base(filters)
+    public HardlinkTask(string[] sourcefolders, string target, Filter[]? filters) : base(filters)
     {
         this.sourcefolders = sourcefolders.Select(f => f.TrimEnd('\\')).ToArray();
         this.target = target.TrimEnd('\\');
@@ -32,11 +32,11 @@ internal class HardlinkTask : CopyTask
         {
             CurrentAction = "Discovery";
             DoStatus(true);
-            var sources = sourcefolders.SelectMany(s => GetFiles(s, Path.GetDirectoryName(s), target)).ToList();
+            var sources = Discover();
+            sources.RemoveAll(i => !MatchesFilters(i.Source));
             this.TotalItems = sources.Count;
             this.TotalProgress = sources.Count;
             DoStatus(true);
-            sources.RemoveAll(i => !MatchesFilters(i.Source));
             if (CheckCancel()) { return; }
             foreach (var item in sources)
             {
@@ -97,35 +97,45 @@ internal class HardlinkTask : CopyTask
         }
     }
 
-    private IEnumerable<FileJob> GetFiles(string fileordir, string? source, string target)
+    private List<FileJob> Discover()
+    {
+        List<FileJob> dirs = [];
+        List<FileJob> files = [];
+        foreach (var source in sourcefolders)
+        {
+            GetFiles(source, Path.GetDirectoryName(source), target, files, dirs);
+        }
+        dirs.AddRange(files);
+        return dirs;
+    }
+
+    private void GetFiles(string fileordir, string? source, string target, List<FileJob> files, List<FileJob> dirs)
     {
         if (Directory.Exists(fileordir))
         {
-            foreach (var item in GetFilesRecursive(fileordir, source, target))
-            {
-                yield return item;
-            }
+            GetFilesRecursive(fileordir, source, target, files, dirs);
         }
         else if (File.Exists(fileordir))
         {
-            yield return new FileJob(fileordir, Replacedir(fileordir, source, target), true);
+            files.Add(new FileJob(fileordir, Replacedir(fileordir, source, target), true));
         }
     }
 
-    private IEnumerable<FileJob> GetFilesRecursive(string dir, string? source, string target)
+    private void GetFilesRecursive(string dir, string? source, string target, List<FileJob> files, List<FileJob> dirs)
     {
-        yield return new FileJob(dir, Replacedir(dir, source, target), false);
-        foreach (var file in Directory.GetFiles(dir))
+        try
         {
-            yield return new FileJob(file, Replacedir(file, source, target), true);
-        }
-        foreach (var subdir in Directory.GetDirectories(dir))
-        {
-            foreach (var item in GetFilesRecursive(subdir, source, target))
+            foreach (var subdir in Directory.GetDirectories(dir))
             {
-                yield return item;
+                GetFilesRecursive(subdir, source, target, files, dirs);
             }
+            foreach (var file in Directory.GetFiles(dir))
+            {
+                files.Add(new FileJob(file, Replacedir(file, source, target), true));
+            }
+            dirs.Add(new FileJob(dir, Replacedir(dir, source, target), false));
         }
+        catch { }//missing permissions doesn't concern us for now
     }
 
     private class FileJob(string Source, string Target, bool IsFile)

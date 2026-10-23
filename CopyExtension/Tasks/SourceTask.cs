@@ -33,10 +33,7 @@ public class SourceTask : CopyTask
             foreach (var dir in target)
             {
                 FindToDeleteRecursive(dir, todelete);
-                if (todelete.Contains(dir))
-                {
-                    todelete.Remove(dir);
-                }
+                todelete.Remove(dir);
             }
             todelete.RemoveAll(i => !MatchesFilters(i));
             if (CheckCancel()) { return; }
@@ -81,22 +78,26 @@ public class SourceTask : CopyTask
     private void FindToDeleteRecursive(string Dir, List<string> todelete)
     {
         if (IsCancelled) { return; }
-        bool iscs = Directory.EnumerateFiles(Dir).Any(f => csexts.Contains(Path.GetExtension(f).ToLower()));
-        bool ispio = Directory.EnumerateFiles(Dir).Any(f => Path.GetFileName(f).ToLower() == "platformio.ini");
-        foreach (var subdir in Directory.EnumerateDirectories(Dir))
+        try
         {
-            string name = Path.GetFileName(subdir).ToLower();
-            if (iscs && (name == "bin" || name == "obj" || name == ".vs"))
+            bool iscs = Directory.EnumerateFiles(Dir).Any(f => csexts.Contains(Path.GetExtension(f).ToLower()));
+            bool ispio = Directory.EnumerateFiles(Dir).Any(f => Path.GetFileName(f).ToLower() == "platformio.ini");
+            foreach (var subdir in Directory.EnumerateDirectories(Dir))
             {
-                todelete.Add(subdir);
-                continue;
+                string name = Path.GetFileName(subdir).ToLower();
+                if (iscs && (name == "bin" || name == "obj" || name == ".vs"))
+                {
+                    todelete.Add(subdir);
+                    continue;
+                }
+                if (ispio && name == ".pio")
+                {
+                    todelete.Add(subdir);
+                    continue;
+                }
+                FindToDeleteRecursive(subdir, todelete);
             }
-            if (ispio && name == ".pio")
-            {
-                todelete.Add(subdir);
-                continue;
-            }
-            FindToDeleteRecursive(subdir, todelete);
         }
+        catch { }
     }
 }

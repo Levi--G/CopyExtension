@@ -93,14 +93,14 @@ internal static class DirExt
         }
         catch { }
     }
-    public static bool DeleteSafe(string? path)
+    public static bool DeleteSafe(string? path, bool recursive = true)
     {
         if (path == null) { return false; }
         for (int i = 0; i < 3; i++)
         {
             try
             {
-                Directory.Delete(path, true);
+                Directory.Delete(path, recursive);
                 return true;
             }
             catch { }
