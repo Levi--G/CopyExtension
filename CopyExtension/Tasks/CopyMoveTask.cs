@@ -170,95 +170,87 @@ public class CopyMoveTask : CopyTask
             return;
         }
         var q = new Queue<FileJob>(jobs);
-        var current = q.Dequeue();
+        var current = q.DequeueOrDefault();
         while (current != null && !CheckCancel())
         {
-            if (current.IsFile)
+            if (current.FileSize > Program.Options.SmallFileSize || !current.IsFile)
             {
-                if (current.FileSize > Program.Options.SmallFileSize || !current.IsFile)
-                {
-                    action(current, false);
-                    current = q.Count > 0 ? q.Dequeue() : null;
-                }
-                else
-                {
-                    CurrentAction = (copyType == CopyJobType.Copy || copyType == CopyJobType.CopyUnsafe) ? FileJob.COPYING : ((copyType == CopyJobType.Move || copyType == CopyJobType.MoveUnsafe) ? FileJob.MOVING : FileJob.COMPARING);
-                    CurrentName = "Bulk operation";
-                    DoStatus(false);
-                    var busykey = new Lock();
-                    var busy = 0;
-
-                    while (current != null)
-                    {
-                        if (current.FileSize <= Program.Options.SmallFileSize && current.IsFile)
-                        {
-                            while (!CheckCancel())
-                            {
-                                lock (busykey)
-                                {
-                                    if (busy < 5)
-                                    {
-                                        break;
-                                    }
-                                }
-                                Thread.Sleep(10);
-                            }
-                            lock (busykey)
-                            {
-                                busy++;
-                            }
-                            var threadeditem = current;
-                            if (!ThreadPool.QueueUserWorkItem((a) =>
-                            {
-                                try
-                                {
-                                    action(threadeditem, true);
-                                }
-                                finally
-                                {
-                                    lock (busykey)
-                                    {
-                                        busy--;
-                                    }
-                                }
-                            }))
-                            {
-                                try
-                                {
-                                    action(threadeditem, true);
-                                }
-                                finally
-                                {
-                                    lock (busykey)
-                                    {
-                                        busy--;
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            break;
-                        }
-                        current = q.Count > 0 ? q.Dequeue() : null;
-                    }
-                    while (!CheckCancel())
-                    {
-                        lock (busykey)
-                        {
-                            if (busy <= 0)
-                            {
-                                break;
-                            }
-                        }
-                        Thread.Sleep(10);
-                    }
-                }
+                action(current, !current.IsFile);
+                current = q.DequeueOrDefault();
             }
             else
             {
-                action(current, true);
-                current = q.Count > 0 ? q.Dequeue() : null;
+                CurrentAction = (copyType == CopyJobType.Copy || copyType == CopyJobType.CopyUnsafe) ? FileJob.COPYING : ((copyType == CopyJobType.Move || copyType == CopyJobType.MoveUnsafe) ? FileJob.MOVING : FileJob.COMPARING);
+                CurrentName = "Bulk operation";
+                DoStatus(false);
+                var busykey = new Lock();
+                var busy = 0;
+
+                while (current != null)
+                {
+                    if (current.FileSize <= Program.Options.SmallFileSize && current.IsFile)
+                    {
+                        while (!CheckCancel())
+                        {
+                            lock (busykey)
+                            {
+                                if (busy < 5)
+                                {
+                                    break;
+                                }
+                            }
+                            Thread.Sleep(10);
+                        }
+                        lock (busykey)
+                        {
+                            busy++;
+                        }
+                        var threadeditem = current;
+                        if (!ThreadPool.QueueUserWorkItem((a) =>
+                        {
+                            try
+                            {
+                                action(threadeditem, true);
+                            }
+                            finally
+                            {
+                                lock (busykey)
+                                {
+                                    busy--;
+                                }
+                            }
+                        }))
+                        {
+                            try
+                            {
+                                action(threadeditem, true);
+                            }
+                            finally
+                            {
+                                lock (busykey)
+                                {
+                                    busy--;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                    current = q.DequeueOrDefault();
+                }
+                while (!CheckCancel())
+                {
+                    lock (busykey)
+                    {
+                        if (busy <= 0)
+                        {
+                            break;
+                        }
+                    }
+                    Thread.Sleep(10);
+                }
             }
         }
     }

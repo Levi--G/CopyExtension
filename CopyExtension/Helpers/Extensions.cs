@@ -81,6 +81,11 @@ internal static class Extensions
 
         return builder.ToString();
     }
+
+    public static T? DequeueOrDefault<T>(this Queue<T> queue)
+    {
+        return queue.Count > 0 ? queue.Dequeue() : default;
+    }
 }
 internal static class DirExt
 {
