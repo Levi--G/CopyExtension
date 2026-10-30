@@ -18,6 +18,10 @@ A windows shell extension to add missing explorer functions directly in the dire
 ## Installation for W11+
 - Download from the store will be available shortly.
 
+## Uninstallation for W11+
+- Uninstall the app from settings
+- Remove the `%localappdata%\CopyExtension` directory manually
+
 ## Old W10 Installation
 - Find a release zip on github
 - Unzip to any permanent folder (do not move the files afterwards)
