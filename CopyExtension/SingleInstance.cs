@@ -1,4 +1,5 @@
-﻿using System.IO.Pipes;
+﻿using System.CommandLine.Help;
+using System.IO.Pipes;
 using System.Security.AccessControl;
 using System.Security.Principal;
 
@@ -17,7 +18,13 @@ namespace CopyExtension
             try
             {
                 var parsed = cmd.Parse(args);
-                if (parsed.Errors.Any())
+                if (parsed.Errors.Any() || parsed.Action?.GetType() == typeof(HelpAction))
+                {
+                    Win32Console.Attach();
+                    cmd.Execute(parsed);
+                    return;
+                }
+                if (parsed.Action?.GetType() == typeof(Cmd.SettingsAction))
                 {
                     cmd.Execute(parsed);
                     return;
@@ -49,8 +56,9 @@ namespace CopyExtension
         }
         void Cleanup()
         {
-            cts.Cancel();
+            try { cts.Cancel(); } catch { }
             mutex?.Dispose();
+            mutex = null;
         }
         void StartPipeServer()
         {

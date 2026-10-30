@@ -2,6 +2,7 @@
 using CopyExtension.Tasks;
 using CopyExtension.UI;
 using System.CommandLine;
+using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
 using System.Text;
@@ -293,6 +294,8 @@ internal class Cmd
             DoExtraPost(parseResult, parseResult.GetValue(waitOption));
         });
 
+        rootCommand.Action = new SettingsAction();
+
         return rootCommand;
     }
 
@@ -454,5 +457,14 @@ internal class Cmd
         }
 
         return true;
+    }
+
+    public class SettingsAction : SynchronousCommandLineAction
+    {
+        public override int Invoke(ParseResult parseResult)
+        {
+            SettingsWindow.ShowDialog();
+            return 0;
+        }
     }
 }

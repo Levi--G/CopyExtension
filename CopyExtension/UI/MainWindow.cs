@@ -3,7 +3,6 @@ using Avalonia.Controls;
 using Avalonia.Input.Platform;
 using Avalonia.Layout;
 using Avalonia.Media;
-using Avalonia.Themes.Fluent;
 using Avalonia.Threading;
 using CopyExtension.Helpers;
 using CopyExtension.Tasks;
@@ -15,7 +14,6 @@ namespace CopyExtension.UI;
 class MainWindow : Window, ICopyWindow
 {
     public static TimeSpan UpdateInterval = TimeSpan.FromMilliseconds(500);
-    public static uint BackGroundBrush = 0xFF2C2C2C;
     public event Action? ExitRequested;
 
     Panel panel = new WrapPanel
@@ -28,19 +26,8 @@ class MainWindow : Window, ICopyWindow
     public MainWindow(WindowMgr windowMgr)
     {
         Title = "Running tasks";
-        Background = new SolidColorBrush(BackGroundBrush);
-        try
-        {
-            var path = Path.Combine(AppContext.BaseDirectory, "Images", "Square44x44Logo.targetsize-16.png");
-            if (File.Exists(path))
-            {
-                using var s = File.OpenRead(path);
-                Icon = new WindowIcon(s);
-            }
-        }
-        catch { }
-        //Width = 400;
-        //Height = 300;
+        Background = new SolidColorBrush(CopyApp.BackGroundBrush);
+        Icon = CopyApp.TryGetIcon();
         Panel g = new();
         g.Children.Add(panel);
         var optionscm = new MenuFlyout();
@@ -134,46 +121,12 @@ class MainWindow : Window, ICopyWindow
     {
         var c = new TaskControl(task);
         panel.Children.Add(c);
-        Title = $"Running {panel.Children.Count - 1} tasks";
+        Title = $"Running {panel.Children.Count} tasks";
     }
 
     public static MainWindow Start(WindowMgr windowMgr)
     {
-        MainWindow? Instance = null;
-        Thread t = new((StartApp) =>
-        {
-            AppBuilder.Configure<Application>()
-                .UseHarfBuzz()
-                .UseWin32()
-                .UseSkia()
-                .Start(
-                (app, args) =>
-                    {
-                        Dispatcher.UIThread.UnhandledException += OnUnhandledException;
-                        app.Styles.Add(new FluentTheme());
-                        var window = new MainWindow(windowMgr);
-                        Instance = window;
-                        window.Show();
-                        app.Run(window);
-                    }, []);
-        });
-        t.TrySetApartmentState(ApartmentState.STA);
-        t.Start();
-        while (Instance == null)
-        {
-            Thread.Sleep(20);
-        }
-        while (!Instance.IsInitialized)
-        {
-            Thread.Sleep(20);
-        }
-        return Instance;
-    }
-
-    private static void OnUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
-    {
-        Program.Logger.Log("Dispatcher", "Unhandled UI thread exception: " + e.Exception.Message);
-        e.Handled = true;
+        return CopyApp.StartAvaloniaWindow(() => new MainWindow(windowMgr));
     }
 
     public void Invoke(Action<ICopyWindow> torun)

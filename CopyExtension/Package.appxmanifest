@@ -5,6 +5,8 @@
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:uap2="http://schemas.microsoft.com/appx/manifest/uap/windows10/2"
   xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
+  xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
   xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
@@ -17,7 +19,7 @@
   <Identity
     Name="35879WobGames.SFCopyExtension"
     Publisher="CN=73338FE3-9FD7-4276-B325-656166DF3F24"
-    Version="1.0.2.0" />
+    Version="3.0.3.0" />
 
   <Properties>
     <DisplayName>SFCopyExtension</DisplayName>
@@ -37,7 +39,8 @@
   <Applications>
     <Application Id="App"
       Executable="$targetnametoken$.exe"
-      EntryPoint="$targetentrypoint$">
+      EntryPoint="$targetentrypoint$"
+      desktop4:SupportsMultipleInstances="true">
       <uap:VisualElements
         DisplayName="SFCopyExtension"
         Description="CopyExtension.Package"
@@ -70,14 +73,22 @@
         <desktop4:Extension Category="windows.fileExplorerContextMenus">
           <desktop4:FileExplorerContextMenus>
             <desktop5:ItemType Type="Directory\Background">
-              <desktop5:Verb Id="CE1" Clsid="E4F42BBA-C1A7-11F1-A431-FC9D053267A4" />              <!--CopyCommandVerb-->
-              <desktop5:Verb Id="CE2" Clsid="E4F42BBB-C1A7-11F1-A431-FC9D053267A4" />              <!--MoveCommandVerb-->
-              <desktop5:Verb Id="CE3" Clsid="E4F42BBC-C1A7-11F1-A431-FC9D053267A4" />              <!--CompareCommandVerb-->
-              <desktop5:Verb Id="CE4" Clsid="E4F42BBD-C1A7-11F1-A431-FC9D053267A4" />              <!--CompareNamesCommandVerb-->
-              <desktop5:Verb Id="CE5" Clsid="E4F42BC1-C1A7-11F1-A431-FC9D053267A4" />              <!--CleanSourceCommandVerb-->
-              <desktop5:Verb Id="CE6" Clsid="E4F42BC0-C1A7-11F1-A431-FC9D053267A4" />              <!--NukeFoldersCommandVerb-->
-              <desktop5:Verb Id="CE7" Clsid="E4F42BBF-C1A7-11F1-A431-FC9D053267A4" />              <!--NukeFilesCommandVerb-->
-              <desktop5:Verb Id="CE8" Clsid="E4F42BBE-C1A7-11F1-A431-FC9D053267A4" />              <!--HardlinkCommandVerb-->
+              <desktop5:Verb Id="CE1" Clsid="E4F42BBA-C1A7-11F1-A431-FC9D053267A4" />
+              <!--CopyCommandVerb-->
+              <desktop5:Verb Id="CE2" Clsid="E4F42BBB-C1A7-11F1-A431-FC9D053267A4" />
+              <!--MoveCommandVerb-->
+              <desktop5:Verb Id="CE3" Clsid="E4F42BBC-C1A7-11F1-A431-FC9D053267A4" />
+              <!--CompareCommandVerb-->
+              <desktop5:Verb Id="CE4" Clsid="E4F42BBD-C1A7-11F1-A431-FC9D053267A4" />
+              <!--CompareNamesCommandVerb-->
+              <desktop5:Verb Id="CE5" Clsid="E4F42BC1-C1A7-11F1-A431-FC9D053267A4" />
+              <!--CleanSourceCommandVerb-->
+              <desktop5:Verb Id="CE6" Clsid="E4F42BC0-C1A7-11F1-A431-FC9D053267A4" />
+              <!--NukeFoldersCommandVerb-->
+              <desktop5:Verb Id="CE7" Clsid="E4F42BBF-C1A7-11F1-A431-FC9D053267A4" />
+              <!--NukeFilesCommandVerb-->
+              <desktop5:Verb Id="CE8" Clsid="E4F42BBE-C1A7-11F1-A431-FC9D053267A4" />
+              <!--HardlinkCommandVerb-->
               <desktop5:Verb Id="CU1" Clsid="E4F42BCA-C1A7-11F1-A431-FC9D053267A4" />
               <desktop5:Verb Id="CU2" Clsid="E4F42BCB-C1A7-11F1-A431-FC9D053267A4" />
               <desktop5:Verb Id="CU3" Clsid="E4F42BCC-C1A7-11F1-A431-FC9D053267A4" />
@@ -85,9 +96,12 @@
               <desktop5:Verb Id="CU5" Clsid="E4F42BCE-C1A7-11F1-A431-FC9D053267A4" />
             </desktop5:ItemType>
             <desktop5:ItemType Type="Directory">
-              <desktop5:Verb Id="CE5" Clsid="E4F42BC1-C1A7-11F1-A431-FC9D053267A4" />              <!--CleanSourceCommandVerb-->
-              <desktop5:Verb Id="CE6" Clsid="E4F42BC0-C1A7-11F1-A431-FC9D053267A4" />              <!--NukeFoldersCommandVerb-->
-              <desktop5:Verb Id="CE7" Clsid="E4F42BBF-C1A7-11F1-A431-FC9D053267A4" />              <!--NukeFilesCommandVerb-->
+              <desktop5:Verb Id="CE5" Clsid="E4F42BC1-C1A7-11F1-A431-FC9D053267A4" />
+              <!--CleanSourceCommandVerb-->
+              <desktop5:Verb Id="CE6" Clsid="E4F42BC0-C1A7-11F1-A431-FC9D053267A4" />
+              <!--NukeFoldersCommandVerb-->
+              <desktop5:Verb Id="CE7" Clsid="E4F42BBF-C1A7-11F1-A431-FC9D053267A4" />
+              <!--NukeFilesCommandVerb-->
               <desktop5:Verb Id="CU1" Clsid="E4F42BCA-C1A7-11F1-A431-FC9D053267A4" />
               <desktop5:Verb Id="CU2" Clsid="E4F42BCB-C1A7-11F1-A431-FC9D053267A4" />
               <desktop5:Verb Id="CU3" Clsid="E4F42BCC-C1A7-11F1-A431-FC9D053267A4" />
@@ -96,9 +110,14 @@
             </desktop5:ItemType>
           </desktop4:FileExplorerContextMenus>
         </desktop4:Extension>
-        <!--<uap:Extension Category="windows.protocol">
-          <uap:Protocol Name="protocolname"/>
-        </uap:Extension>-->
+        <uap5:Extension Category="windows.appExecutionAlias">
+          <uap5:AppExecutionAlias
+            desktop4:Subsystem = 'console'>
+            <uap5:ExecutionAlias
+              Alias = 'CopyExtension.exe'>
+            </uap5:ExecutionAlias>
+          </uap5:AppExecutionAlias>
+        </uap5:Extension>
       </Extensions>
     </Application>
   </Applications>

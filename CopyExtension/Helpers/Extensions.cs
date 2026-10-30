@@ -1,4 +1,5 @@
-﻿using CopyExtension.Tasks;
+﻿using Avalonia.Controls;
+using CopyExtension.Tasks;
 using System.Text;
 
 namespace CopyExtension.Helpers;
@@ -85,6 +86,84 @@ internal static class Extensions
     public static T? DequeueOrDefault<T>(this Queue<T> queue)
     {
         return queue.Count > 0 ? queue.Dequeue() : default;
+    }
+
+    public static void SetGridLocation(this Control c, int row, int column)
+    {
+        Grid.SetRow(c, row);
+        Grid.SetColumn(c, column);
+    }
+
+    public static void SetGridSpan(this Control c, int row, int column)
+    {
+        Grid.SetRowSpan(c, row);
+        Grid.SetColumnSpan(c, column);
+    }
+
+    public static void AutoGrid(this Grid g, GridLength row, string columns, IEnumerable<Control?> controls)
+    {
+        var cols = ColumnDefinitions.Parse(columns);
+        g.ColumnDefinitions = cols;
+        g.Children.Clear();
+        int count = 0;
+        foreach (var c in controls)
+        {
+            if (c != null)
+            {
+                c.SetGridLocation(count / cols.Count, count % cols.Count);
+                g.Children.Add(c);
+            }
+            count++;
+        }
+        count--;
+        var rows = (count / cols.Count) + 1;
+        g.RowDefinitions.AddRange(Enumerable.Repeat(row, rows).Select(l => new RowDefinition(l)));
+    }
+
+    public static void AutoGridWithSpan(this Grid g, GridLength row, string columns, IEnumerable<Control?> controls)
+    {
+        var cols = ColumnDefinitions.Parse(columns);
+        g.ColumnDefinitions = cols;
+        g.Children.Clear();
+        Control? last = null;
+        int span = 0;
+        int count = 0;
+        foreach (var c in controls)
+        {
+            if (c == last)
+            {
+                if (c != null)
+                {
+                    span++;
+                }
+            }
+            else
+            {
+                if (span > 0)
+                {
+                    var rowspan = (span / cols.Count) + 1;
+                    var colspan = Math.Min(span + 1, cols.Count);
+                    last?.SetGridSpan(rowspan, colspan);
+                    span = 0;
+                }
+                if (c != null)
+                {
+                    c.SetGridLocation(count / cols.Count, count % cols.Count);
+                    g.Children.Add(c);
+                }
+                last = c;
+            }
+            count++;
+        }
+        if (span > 0)
+        {
+            var rowspan = (span / cols.Count) + 1;
+            var colspan = Math.Min(span + 1, cols.Count);
+            last?.SetGridSpan(rowspan, colspan);
+        }
+        count--;
+        var rows = (count / cols.Count) + 1;
+        g.RowDefinitions.AddRange(Enumerable.Repeat(row, rows).Select(l => new RowDefinition(l)));
     }
 }
 internal static class DirExt

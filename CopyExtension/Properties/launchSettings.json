@@ -2,7 +2,6 @@
   "profiles": {
     "CopyExtension": {
       "commandName": "MsixPackage",
-      "commandLineArgs": "copy -c -l false",
       "alwaysReinstallApp": true,
       "remoteDebugEnabled": false,
       "allowLocalNetworkLoopbackProperty": true,

@@ -19,7 +19,7 @@ public class OptionControl : UserControl
             RowDefinitions = RowDefinitions.Parse("auto,*,auto"),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             VerticalAlignment = VerticalAlignment.Stretch,
-            Background = new SolidColorBrush(MainWindow.BackGroundBrush)
+            Background = new SolidColorBrush(CopyApp.BackGroundBrush)
         };
         Grid.Children.Add(new TextBlock() { Text = text });
         var flow = new WrapPanel() { VerticalAlignment = VerticalAlignment.Center };

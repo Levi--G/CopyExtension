@@ -10,8 +10,8 @@ public class Settings
 {
     public bool ReserveWriting { get; set; } = true;
     public bool ReserveReading { get; set; } = false;
-    public bool EnableCompareNames { get; set; } = true;
-    public bool EnableHardlink { get; set; } = true;
+    public bool EnableCompareNames { get; set; } = false;
+    public bool EnableHardlink { get; set; } = false;
     public bool EnableNukeFolder { get; set; } = true;
     public bool EnableNukeFile { get; set; } = true;
     public bool EnableCleanSource { get; set; } = false;
@@ -45,6 +45,11 @@ public class Settings
         {
             return JsonSerializer.Deserialize(s, SourceGenerationContext.Default.Settings) ?? new();
         }
+    }
+
+    public void Save()
+    {
+        Save(this);
     }
 
     public static void Save(Settings settings)

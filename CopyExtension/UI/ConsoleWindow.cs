@@ -110,7 +110,7 @@ internal class ConsoleWindow : ICopyWindow, IOptionGui
 
     public static ICopyWindow Start(WindowMgr windowMgr)
     {
-        W32Console.Attach();
+        W32Console.AttachOrAlloc();
         return new ConsoleWindow(windowMgr);
     }
 
