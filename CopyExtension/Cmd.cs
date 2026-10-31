@@ -43,7 +43,7 @@ internal class Cmd
         };
         Option<bool> consoleOption = new("--console", "-n")
         {
-            Description = "(Debug) Opens a console window",
+            Description = "Uses console output instead of a window",
             Recursive = true,
             Arity = ArgumentArity.Zero
         };
@@ -283,7 +283,7 @@ internal class Cmd
             {
                 command ??= Program.Options.CustomCommands.FirstOrDefault(c => c.ExplorerId == id);
             }
-            if (command == null) { throw new Exception("-n or -i must be supplied"); }
+            if (command == null) { throw new Exception("-a or -i must be supplied"); }
             windowMgr ??= new(console);
             windowMgr.Start();
             var t = command.ToTask(GetSource(windowMgr, [destination], false), GetSource(windowMgr, source, true), exists);

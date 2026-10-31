@@ -59,6 +59,7 @@ namespace CopyExtension
             try { cts.Cancel(); } catch { }
             mutex?.Dispose();
             mutex = null;
+            Win32Console.Detach();
         }
         void StartPipeServer()
         {

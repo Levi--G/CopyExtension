@@ -146,7 +146,7 @@ internal class ConsoleWindow : ICopyWindow, IOptionGui
         Console.CancelKeyPress -= Console_CancelKeyPress;
         sigquit?.Dispose(); sigquit = null;
         sigterm?.Dispose(); sigterm = null;
-        W32Console.Detach();
+        Win32Console.Detach();
     }
 
     public void Invoke(Action<ICopyWindow> torun)

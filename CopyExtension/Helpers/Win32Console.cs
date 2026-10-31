@@ -2,24 +2,22 @@
 
 namespace CopyExtension;
 
-internal partial class Win32Console
+internal partial class Win32Console : IDisposable
 {
     static bool Attached = false;
-    bool Allocated = false;
 
     public Win32Console AttachOrAlloc()
     {
         if (!Attached)
         {
-            if (AttachConsole(ATTACH_PARENT_PROCESS))
+            if (!AttachConsole(ATTACH_PARENT_PROCESS))
             {
-                Attached = true;
+                if (!AllocConsole())
+                {
+                    return this;
+                }
             }
-            else
-            {
-                AllocConsole();
-                Allocated = true;
-            }
+            Attached = true;
         }
         return this;
     }
@@ -40,12 +38,17 @@ internal partial class Win32Console
         Detach();
     }
 
-    public void Detach()
+    public void Dispose()
     {
-        if (Allocated)
+        Detach();
+    }
+
+    public static void Detach()
+    {
+        if (Attached)
         {
             FreeConsole();
-            Allocated = false;
+            Attached = false;
         }
     }
 
